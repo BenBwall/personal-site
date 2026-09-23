@@ -1,9 +1,9 @@
 <script lang="ts">
   import { browser } from '$app/environment';
   import ColorSchemeToggle from '$components/ColorSchemeToggle.svelte';
+  import RainbowSettings from '$components/RainbowSettings.svelte';
   import CheckboxInput from '$inputs/CheckboxInput.svelte';
   import InputField from '$inputs/InputField.svelte';
-  import IntegerInput from '$inputs/IntegerInput.svelte';
   import RangeInput from '$inputs/RangeInput.svelte';
   import {
     applyTheme,
@@ -11,7 +11,6 @@
     fullHueRotation,
     getCurrentTheme,
     maxChroma,
-    maxRainbowIntervalMs,
     setTheme,
   } from '$lib/theme/theme';
   import { preferences, setPreference } from '$theme/preferences.svelte';
@@ -26,20 +25,31 @@
 
   const saveTheme = () => {
     const root = document.documentElement;
-    const rainbowAnimation = root
+    const animations = root
       .getAnimations()
-      .find(
-        (animation) =>
-          animation instanceof CSSAnimation && animation.animationName === 'rainbow-hue',
-      );
-
-    if (rainbowAnimation) {
-      // Capture the displayed hue only when saving, and rebase to avoid jumps on speed changes.
+      .filter((animation) => animation instanceof CSSAnimation);
+    if (animations.length > 0) {
+      // Rebase running channels to their displayed values before changing animation timing.
       const style = getComputedStyle(root);
-      const hue = Number.parseFloat(style.getPropertyValue('--theme-hue'));
-      const offset = Number.parseFloat(style.getPropertyValue('--rainbow-hue-offset'));
-      theme.hue = Math.round(hue + offset) % fullHueRotation;
-      rainbowAnimation.currentTime = 0;
+      for (const animation of animations) {
+        switch (animation.animationName) {
+          case 'rainbow-hue': {
+            const hue = Number.parseFloat(style.getPropertyValue('--theme-hue'));
+            const offset = Number.parseFloat(style.getPropertyValue('--rainbow-hue-offset'));
+            theme.hue = Math.round(hue + offset) % fullHueRotation;
+            break;
+          }
+          case 'rainbow-luminosity': {
+            theme.luminosity = Number.parseFloat(style.getPropertyValue('--theme-luminosity'));
+            break;
+          }
+          case 'rainbow-chroma': {
+            theme.chroma = Number.parseFloat(style.getPropertyValue('--theme-chroma'));
+            break;
+          }
+        }
+        animation.currentTime = 0;
+      }
     }
 
     setTheme(theme);
@@ -82,67 +92,99 @@
     title="Pause rainbow colors and turn off interface animations"
     onCheckedChange={(checked) => setPreference('reducedMotion', checked)}
   />
-  <RangeInput
-    label="Luminosity"
-    min={0}
-    max={1}
-    step={0.01}
-    bind:value={theme.luminosity}
-    valueLabel={`${Math.round(theme.luminosity * 100)}%`}
-    aria-valuetext={`${Math.round(theme.luminosity * 100)} percent`}
-    onValueChange={saveTheme}
-  />
-  <RangeInput
-    label="Chroma"
-    min={0}
-    max={maxChroma}
-    step={0.01}
-    bind:value={theme.chroma}
-    valueLabel={theme.chroma.toFixed(2)}
-    onValueChange={saveTheme}
-  />
-  <RangeInput
-    label="Hue"
-    min={0}
-    max={fullHueRotation}
-    step={1}
-    bind:value={theme.hue}
-    valueLabel={theme.rainbowEnabled
-      ? preferences.reducedMotion
-        ? 'Paused'
-        : 'Cycling'
-      : `${theme.hue}°`}
-    disabled={theme.rainbowEnabled}
-    aria-valuetext={theme.rainbowEnabled
-      ? preferences.reducedMotion
-        ? 'Paused'
-        : 'Cycling'
-      : `${theme.hue} degrees`}
-    onValueChange={saveTheme}
-  />
-  <CheckboxInput
-    label="Rainbow hue"
-    bind:checked={theme.rainbowEnabled}
-    onCheckedChange={saveTheme}
-  />
-  <IntegerInput
-    label="Hue increment (°)"
-    min={1}
-    max={fullHueRotation - 1}
-    required
-    title="1–359 degrees per interval"
-    bind:value={theme.rainbowIncrement}
-    onValueChange={saveTheme}
-  />
-  <IntegerInput
-    label="Interval (ms)"
-    min={1}
-    max={maxRainbowIntervalMs}
-    title="1–2,147,483,647 milliseconds"
-    required
-    bind:value={theme.rainbowIntervalMs}
-    onValueChange={saveTheme}
-  />
+  <div class="slider-group">
+    <RangeInput
+      label="Luminosity"
+      min={0}
+      max={1}
+      step={0.01}
+      bind:value={theme.luminosity}
+      valueLabel={theme.rainbowLuminosityEnabled
+        ? preferences.reducedMotion
+          ? 'Paused'
+          : 'Cycling'
+        : `${Math.round(theme.luminosity * 100)}%`}
+      aria-valuetext={theme.rainbowLuminosityEnabled
+        ? preferences.reducedMotion
+          ? 'Paused'
+          : 'Cycling'
+        : `${Math.round(theme.luminosity * 100)} percent`}
+      disabled={theme.rainbowLuminosityEnabled}
+      onValueChange={saveTheme}
+    />
+    <RainbowSettings
+      channel="luminosity"
+      incrementLabel="Increment (%)"
+      incrementMax={100}
+      incrementTitle="1–100 percentage points per interval"
+      bind:enabled={theme.rainbowLuminosityEnabled}
+      bind:increment={theme.rainbowLuminosityIncrement}
+      bind:intervalMs={theme.rainbowLuminosityIntervalMs}
+      onChange={saveTheme}
+    />
+  </div>
+  <div class="slider-group">
+    <RangeInput
+      label="Chroma"
+      min={0}
+      max={maxChroma}
+      step={0.01}
+      bind:value={theme.chroma}
+      valueLabel={theme.rainbowChromaEnabled
+        ? preferences.reducedMotion
+          ? 'Paused'
+          : 'Cycling'
+        : theme.chroma.toFixed(2)}
+      aria-valuetext={theme.rainbowChromaEnabled
+        ? preferences.reducedMotion
+          ? 'Paused'
+          : 'Cycling'
+        : theme.chroma.toFixed(2)}
+      disabled={theme.rainbowChromaEnabled}
+      onValueChange={saveTheme}
+    />
+    <RainbowSettings
+      channel="chroma"
+      incrementLabel="Increment (×0.01)"
+      incrementMax={50}
+      incrementTitle="1–50 hundredths per interval"
+      bind:enabled={theme.rainbowChromaEnabled}
+      bind:increment={theme.rainbowChromaIncrement}
+      bind:intervalMs={theme.rainbowChromaIntervalMs}
+      onChange={saveTheme}
+    />
+  </div>
+  <div class="slider-group">
+    <RangeInput
+      label="Hue"
+      min={0}
+      max={fullHueRotation}
+      step={1}
+      bind:value={theme.hue}
+      valueLabel={theme.rainbowEnabled
+        ? preferences.reducedMotion
+          ? 'Paused'
+          : 'Cycling'
+        : `${theme.hue}°`}
+      disabled={theme.rainbowEnabled}
+      aria-valuetext={theme.rainbowEnabled
+        ? preferences.reducedMotion
+          ? 'Paused'
+          : 'Cycling'
+        : `${theme.hue} degrees`}
+      onValueChange={saveTheme}
+    />
+    <RainbowSettings
+      channel="hue"
+      incrementLabel="Increment (°)"
+      incrementMax={fullHueRotation - 1}
+      incrementTitle="1–359 degrees per interval"
+      bind:enabled={theme.rainbowEnabled}
+      bind:increment={theme.rainbowIncrement}
+      bind:intervalMs={theme.rainbowIntervalMs}
+      onChange={saveTheme}
+    />
+  </div>
 </dialog>
 
 <style>
@@ -191,5 +233,13 @@
 
   dialog::backdrop {
     background: rgb(0 0 0 / 8%);
+  }
+
+  .slider-group {
+    border-block-start: 1px solid var(--theme-border-color);
+  }
+
+  .slider-group :global(label.stacked) {
+    border-block: 0;
   }
 </style>

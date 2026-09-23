@@ -4,6 +4,18 @@
   initial-value: 0;
 }
 
+@property --theme-luminosity {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0.6;
+}
+
+@property --theme-chroma {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0.14;
+}
+
 /* Numeric keyframes avoid Firefox's var() interpolation bug (Mozilla bug 1899531). */
 @keyframes rainbow-hue {
   from {
@@ -15,8 +27,38 @@
   }
 }
 
-:root[data-rainbow] {
-  animation: rainbow-hue var(--rainbow-duration) linear infinite;
+@keyframes rainbow-luminosity {
+  0%,
+  100% {
+    --theme-luminosity: 0;
+  }
+
+  50% {
+    --theme-luminosity: 1;
+  }
+}
+
+@keyframes rainbow-chroma {
+  0%,
+  100% {
+    --theme-chroma: 0;
+  }
+
+  50% {
+    --theme-chroma: 0.5;
+  }
+}
+
+:root[data-rainbow-hue] {
+  --rainbow-hue-animation: rainbow-hue;
+}
+
+:root[data-rainbow-luminosity] {
+  --rainbow-luminosity-animation: rainbow-luminosity;
+}
+
+:root[data-rainbow-chroma] {
+  --rainbow-chroma-animation: rainbow-chroma;
 }
 
 :root {
@@ -25,6 +67,16 @@
   --theme-luminosity: 0.6;
   --theme-chroma: 0.14;
   --theme-hue: 250;
+
+  animation-name:
+    var(--rainbow-hue-animation, none), var(--rainbow-luminosity-animation, none),
+    var(--rainbow-chroma-animation, none);
+  animation-duration:
+    var(--rainbow-hue-duration, 1ms), var(--rainbow-luminosity-duration, 1ms),
+    var(--rainbow-chroma-duration, 1ms);
+  animation-delay: 0ms, var(--rainbow-luminosity-delay, 0ms), var(--rainbow-chroma-delay, 0ms);
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
 
   --color-500: oklch(
     var(--theme-luminosity) var(--theme-chroma) calc(var(--theme-hue) + var(--rainbow-hue-offset))
