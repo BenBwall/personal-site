@@ -1,5 +1,6 @@
 <script lang="ts">
   import { asset } from '$app/paths';
+  import Minesweeper from '$lib/components/Minesweeper.svelte';
   import { Heading, Text } from '$lib/components/typography';
 
   const photoWidths = [320, 480, 640, 960] as const;
@@ -67,6 +68,8 @@
     {/each}
   </div>
 </section>
+
+<Minesweeper />
 
 <style>
   .home-page {
