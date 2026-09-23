@@ -2,10 +2,9 @@
 
 Every push to `main` runs `.github/workflows/deploy-domus.yml`. GitHub builds the
 static site for `https://people.arcada.fi/~bergenwb/` and mirrors `dist/` to the
-Domus `html` directory over SFTP. It checks `domus.sad.arcada.fi`,
-`people.arcada.fi`, and `penti.arcada.fi` in that order. The first endpoint that
-exposes the target marker is used; the last endpoint uses
-`/home/b/bergenwb/html`. The marker at `H:\html\.personal-site-deploy-target`
+Domus `html` directory over SFTP. It checks `penti.arcada.fi` first at
+`/home/b/bergenwb/html`, then `domus.sad.arcada.fi` and `people.arcada.fi` at
+`html`. The first endpoint that exposes the target marker is used. The marker at `H:\html\.personal-site-deploy-target`
 must match `.github/domus-deploy-target` before any upload. The existing
 `html/.htaccess` and marker are kept. The previous site has a one-time backup
 at `H:\.personal-site-pre-ci-backup` before the first CI deployment.
