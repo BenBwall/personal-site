@@ -6,13 +6,7 @@ import sharp from 'sharp';
 
 const sourceDirectory = fileURLToPath(new URL('./source-images/', import.meta.url));
 const generatedDirectory = fileURLToPath(new URL('../static/images/generated/', import.meta.url));
-const smallWidth = 320;
-const mediumWidth = 480;
-const largeWidth = 640;
-const extraLargeWidth = 960;
-const widths = [smallWidth, mediumWidth, largeWidth, extraLargeWidth];
-const avifQuality = 50;
-const webpQuality = 80;
+const widths = [320, 480, 640, 960];
 export const generateImages = async () => {
   const originals = (await readdir(sourceDirectory, { withFileTypes: true })).filter(
     (entry) => entry.isFile() && /\.(jpe?g|png)$/i.test(entry.name),
@@ -28,8 +22,8 @@ export const generateImages = async () => {
         const output = join(generatedDirectory, `${parse(original.name).name}-${width}`);
 
         await Promise.all([
-          image.clone().avif({ quality: avifQuality }).toFile(`${output}.avif`),
-          image.webp({ quality: webpQuality }).toFile(`${output}.webp`),
+          image.clone().avif({ quality: 50 }).toFile(`${output}.avif`),
+          image.webp({ quality: 80 }).toFile(`${output}.webp`),
         ]);
       }),
     ),

@@ -1,5 +1,4 @@
 /** Build the downloadable CV from the /resume Svelte page. Run with Bun. */
-/* oxlint-disable eslint/no-magic-numbers -- Point sizes and spacing values define the PDF layout. */
 import { createWriteStream } from 'node:fs';
 import { mkdir, readFile } from 'node:fs/promises';
 import { dirname, resolve as resolvePath } from 'node:path';

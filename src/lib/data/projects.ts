@@ -23,9 +23,6 @@ export type Project = {
   demo: ProjectDemo | null;
 };
 
-const myvmPreviewWidth = 1018;
-const myvmPreviewHeight = 1078;
-
 export const projects: readonly Project[] = [
   {
     demo: null,
@@ -44,9 +41,9 @@ export const projects: readonly Project[] = [
     liveUrl: 'https://vm.bwallker.com',
     preview: {
       alt: 'Myvm editor running an assembly program, with register values and a smiling emoji in the output.',
-      height: myvmPreviewHeight,
+      height: 1078,
       name: 'myvm-preview',
-      width: myvmPreviewWidth,
+      width: 1018,
     },
     title: 'Myvm',
   },
