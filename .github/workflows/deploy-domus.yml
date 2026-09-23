@@ -69,14 +69,15 @@ jobs:
             printf 'set cmd:fail-exit yes\n'
             printf 'set net:max-retries 1\n'
             printf 'set net:timeout 20\n'
-            printf 'set sftp:connect-program "ssh -a -x -o StrictHostKeyChecking=yes -o UserKnownHostsFile=%s/.github/domus_known_hosts"\n' "$GITHUB_WORKSPACE"
+            printf 'set mirror:parallel-directories true\n'
+            printf 'set sftp:connect-program "ssh -a -x -o ConnectTimeout=10 -o StrictHostKeyChecking=yes -o UserKnownHostsFile=%s/.github/domus_known_hosts"\n' "$GITHUB_WORKSPACE"
           }
           target_host=''
           target_dir=''
           for candidate in \
+            'penti.arcada.fi|/home/b/bergenwb/html' \
             'domus.sad.arcada.fi|html' \
-            'people.arcada.fi|html' \
-            'penti.arcada.fi|/home/b/bergenwb/html'; do
+            'people.arcada.fi|html'; do
             host="${candidate%%|*}"
             dir="${candidate#*|}"
             script="$RUNNER_TEMP/domus-probe.lftp"
@@ -104,7 +105,7 @@ jobs:
           {
             lftp_settings
             printf 'open --env-password --user %s sftp://%s\n' "$ARCADA_USERNAME" "$target_host"
-            printf 'mirror --reverse --delete --depth-first --no-perms --exclude-glob .htaccess --exclude-glob .personal-site-deploy-target --exclude-glob deployment.json --verbose site %s\n' "$target_dir"
+            printf 'mirror --reverse --delete --depth-first --parallel=4 --no-perms --exclude-glob .htaccess --exclude-glob .personal-site-deploy-target --exclude-glob deployment.json --verbose site %s\n' "$target_dir"
             printf 'put site/deployment.json -o %s/deployment.json\n' "$target_dir"
             printf 'bye\n'
           } > "$script"
