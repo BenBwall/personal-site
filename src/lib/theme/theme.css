@@ -1,0 +1,158 @@
+@property --rainbow-hue-offset {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+/* Numeric keyframes avoid Firefox's var() interpolation bug (Mozilla bug 1899531). */
+@keyframes rainbow-hue {
+  from {
+    --rainbow-hue-offset: 0;
+  }
+
+  to {
+    --rainbow-hue-offset: 360;
+  }
+}
+
+:root[data-rainbow] {
+  animation: rainbow-hue var(--rainbow-duration) linear infinite;
+}
+
+:root {
+  --theme-border-color: light-dark(var(--color-200), var(--color-800));
+  --disabled-opacity: 0.45;
+  --theme-luminosity: 0.6;
+  --theme-chroma: 0.14;
+  --theme-hue: 250;
+
+  --color-500: oklch(
+    var(--theme-luminosity) var(--theme-chroma) calc(var(--theme-hue) + var(--rainbow-hue-offset))
+  );
+
+  /* Lighter shades approach white; darker shades approach black.
+       These ratios preserve the original palette at the default base color. */
+  --color-50: oklch(from var(--color-500) calc(l + (1 - l) * 0.95) calc(c * 0.008 / 0.14) h);
+  --color-100: oklch(from var(--color-500) calc(l + (1 - l) * 0.85) calc(c * 0.025 / 0.14) h);
+  --color-200: oklch(from var(--color-500) calc(l + (1 - l) * 0.725) calc(c * 0.04 / 0.14) h);
+  --color-300: oklch(from var(--color-500) calc(l + (1 - l) * 0.5) calc(c * 0.07 / 0.14) h);
+  --color-400: oklch(from var(--color-500) calc(l + (1 - l) * 0.25) calc(c * 0.11 / 0.14) h);
+  --color-600: oklch(from var(--color-500) calc(l * 0.5 / 0.6) calc(c * 0.15 / 0.14) h);
+  --color-700: oklch(from var(--color-500) calc(l * 0.43 / 0.6) calc(c * 0.1 / 0.14) h);
+  --color-800: oklch(from var(--color-500) calc(l * 0.35 / 0.6) calc(c * 0.07 / 0.14) h);
+  --color-900: oklch(from var(--color-500) calc(l * 0.28 / 0.6) calc(c * 0.04 / 0.14) h);
+  --color-950: oklch(from var(--color-500) calc(l * 0.22 / 0.6) calc(c * 0.025 / 0.14) h);
+
+  /* Relative colors share the base shade's lightness/chroma; hue wraps at 360 degrees. */
+  --color-complement-50: oklch(from var(--color-50) l c calc(h + 180));
+  --color-complement-100: oklch(from var(--color-100) l c calc(h + 180));
+  --color-complement-200: oklch(from var(--color-200) l c calc(h + 180));
+  --color-complement-300: oklch(from var(--color-300) l c calc(h + 180));
+  --color-complement-400: oklch(from var(--color-400) l c calc(h + 180));
+  --color-complement-500: oklch(from var(--color-500) l c calc(h + 180));
+  --color-complement-600: oklch(from var(--color-600) l c calc(h + 180));
+  --color-complement-700: oklch(from var(--color-700) l c calc(h + 180));
+  --color-complement-800: oklch(from var(--color-800) l c calc(h + 180));
+  --color-complement-900: oklch(from var(--color-900) l c calc(h + 180));
+  --color-complement-950: oklch(from var(--color-950) l c calc(h + 180));
+
+  --color-offset-30-50: oklch(from var(--color-50) l c calc(h + 30));
+  --color-offset-30-100: oklch(from var(--color-100) l c calc(h + 30));
+  --color-offset-30-200: oklch(from var(--color-200) l c calc(h + 30));
+  --color-offset-30-300: oklch(from var(--color-300) l c calc(h + 30));
+  --color-offset-30-400: oklch(from var(--color-400) l c calc(h + 30));
+  --color-offset-30-500: oklch(from var(--color-500) l c calc(h + 30));
+  --color-offset-30-600: oklch(from var(--color-600) l c calc(h + 30));
+  --color-offset-30-700: oklch(from var(--color-700) l c calc(h + 30));
+  --color-offset-30-800: oklch(from var(--color-800) l c calc(h + 30));
+  --color-offset-30-900: oklch(from var(--color-900) l c calc(h + 30));
+  --color-offset-30-950: oklch(from var(--color-950) l c calc(h + 30));
+
+  --color-offset-330-50: oklch(from var(--color-50) l c calc(h + 330));
+  --color-offset-330-100: oklch(from var(--color-100) l c calc(h + 330));
+  --color-offset-330-200: oklch(from var(--color-200) l c calc(h + 330));
+  --color-offset-330-300: oklch(from var(--color-300) l c calc(h + 330));
+  --color-offset-330-400: oklch(from var(--color-400) l c calc(h + 330));
+  --color-offset-330-500: oklch(from var(--color-500) l c calc(h + 330));
+  --color-offset-330-600: oklch(from var(--color-600) l c calc(h + 330));
+  --color-offset-330-700: oklch(from var(--color-700) l c calc(h + 330));
+  --color-offset-330-800: oklch(from var(--color-800) l c calc(h + 330));
+  --color-offset-330-900: oklch(from var(--color-900) l c calc(h + 330));
+  --color-offset-330-950: oklch(from var(--color-950) l c calc(h + 330));
+
+  --color-offset-120-50: oklch(from var(--color-50) l c calc(h + 120));
+  --color-offset-120-100: oklch(from var(--color-100) l c calc(h + 120));
+  --color-offset-120-200: oklch(from var(--color-200) l c calc(h + 120));
+  --color-offset-120-300: oklch(from var(--color-300) l c calc(h + 120));
+  --color-offset-120-400: oklch(from var(--color-400) l c calc(h + 120));
+  --color-offset-120-500: oklch(from var(--color-500) l c calc(h + 120));
+  --color-offset-120-600: oklch(from var(--color-600) l c calc(h + 120));
+  --color-offset-120-700: oklch(from var(--color-700) l c calc(h + 120));
+  --color-offset-120-800: oklch(from var(--color-800) l c calc(h + 120));
+  --color-offset-120-900: oklch(from var(--color-900) l c calc(h + 120));
+  --color-offset-120-950: oklch(from var(--color-950) l c calc(h + 120));
+
+  --color-offset-240-50: oklch(from var(--color-50) l c calc(h + 240));
+  --color-offset-240-100: oklch(from var(--color-100) l c calc(h + 240));
+  --color-offset-240-200: oklch(from var(--color-200) l c calc(h + 240));
+  --color-offset-240-300: oklch(from var(--color-300) l c calc(h + 240));
+  --color-offset-240-400: oklch(from var(--color-400) l c calc(h + 240));
+  --color-offset-240-500: oklch(from var(--color-500) l c calc(h + 240));
+  --color-offset-240-600: oklch(from var(--color-600) l c calc(h + 240));
+  --color-offset-240-700: oklch(from var(--color-700) l c calc(h + 240));
+  --color-offset-240-800: oklch(from var(--color-800) l c calc(h + 240));
+  --color-offset-240-900: oklch(from var(--color-900) l c calc(h + 240));
+  --color-offset-240-950: oklch(from var(--color-950) l c calc(h + 240));
+
+  --color-offset-150-50: oklch(from var(--color-50) l c calc(h + 150));
+  --color-offset-150-100: oklch(from var(--color-100) l c calc(h + 150));
+  --color-offset-150-200: oklch(from var(--color-200) l c calc(h + 150));
+  --color-offset-150-300: oklch(from var(--color-300) l c calc(h + 150));
+  --color-offset-150-400: oklch(from var(--color-400) l c calc(h + 150));
+  --color-offset-150-500: oklch(from var(--color-500) l c calc(h + 150));
+  --color-offset-150-600: oklch(from var(--color-600) l c calc(h + 150));
+  --color-offset-150-700: oklch(from var(--color-700) l c calc(h + 150));
+  --color-offset-150-800: oklch(from var(--color-800) l c calc(h + 150));
+  --color-offset-150-900: oklch(from var(--color-900) l c calc(h + 150));
+  --color-offset-150-950: oklch(from var(--color-950) l c calc(h + 150));
+
+  --color-offset-210-50: oklch(from var(--color-50) l c calc(h + 210));
+  --color-offset-210-100: oklch(from var(--color-100) l c calc(h + 210));
+  --color-offset-210-200: oklch(from var(--color-200) l c calc(h + 210));
+  --color-offset-210-300: oklch(from var(--color-300) l c calc(h + 210));
+  --color-offset-210-400: oklch(from var(--color-400) l c calc(h + 210));
+  --color-offset-210-500: oklch(from var(--color-500) l c calc(h + 210));
+  --color-offset-210-600: oklch(from var(--color-600) l c calc(h + 210));
+  --color-offset-210-700: oklch(from var(--color-700) l c calc(h + 210));
+  --color-offset-210-800: oklch(from var(--color-800) l c calc(h + 210));
+  --color-offset-210-900: oklch(from var(--color-900) l c calc(h + 210));
+  --color-offset-210-950: oklch(from var(--color-950) l c calc(h + 210));
+}
+
+:root[data-reduced-motion='true'] {
+  animation-play-state: paused !important;
+  scroll-behavior: auto !important;
+}
+
+:root[data-reduced-motion='true'] *,
+:root[data-reduced-motion='true'] *::before,
+:root[data-reduced-motion='true'] *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-reduced-motion='false']) {
+    animation-play-state: paused !important;
+    scroll-behavior: auto !important;
+  }
+
+  :root:not([data-reduced-motion='false']) *,
+  :root:not([data-reduced-motion='false']) *::before,
+  :root:not([data-reduced-motion='false']) *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
