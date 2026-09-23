@@ -5,33 +5,39 @@ import { fileURLToPath } from 'node:url';
 
 import { Client, type FileEntryWithStats, type SFTPWrapper } from 'ssh2';
 
-const sshPort = 22;
-const readyTimeoutMs = 10_000;
-const perHostConcurrency = 3;
-const publicCheckAttempts = 10;
-const publicCheckDelayMs = 3_000;
-const publicRequestTimeoutMs = 15_000;
-const shareTokenBytes = 32;
-const remoteRoot = '/home/b/bergenwb/html';
-const hosts = ['penti.arcada.fi', 'xena.arcada.fi', 'gabrielle.arcada.fi'];
-const siteRoot = resolvePath(
+const SSH_PORT = 22;
+const READY_TIMEOUT_MS = 10_000;
+const PER_HOST_CONCURRENCY = 3;
+const PUBLIC_CHECK_ATTEMPTS = 10;
+const PUBLIC_CHECK_DELAY_MS = 3_000;
+const PUBLIC_REQUEST_TIMEOUT_MS = 15_000;
+const SHARE_TOKEN_BYTES = 32;
+const REMOTE_ROOT = '/home/b/bergenwb/html';
+const HOSTS = ['penti.arcada.fi', 'xena.arcada.fi', 'gabrielle.arcada.fi'] as const;
+const SITE_ROOT = resolvePath(
   process.env.DOMUS_SITE_DIR ?? fileURLToPath(new URL('../site/', import.meta.url)),
 );
-const protectedPaths = new Set(['.htaccess', '.personal-site-deploy-target', 'deployment.json']);
-const username = process.env.ARCADA_USERNAME;
-const password = process.env.ARCADA_PASSWORD;
+const PROTECTED_PATHS = new Set([
+  '.htaccess',
+  '.personal-site-deploy-target',
+  'deployment.json',
+] as const);
 
-type Session = { host: string; client: Client; sftp: SFTPWrapper; revision: string };
-type LocalSite = {
-  files: Map<string, { absolute: string; size: number }>;
-  dirs: Set<string>;
-};
-type RemoteSite = { files: Set<string>; dirs: Set<string> };
+type ProtectedPath = typeof PROTECTED_PATHS extends ReadonlySet<infer T> ? T : never;
+const USERNAME = process.env.ARCADA_USERNAME;
+const PASSWORD = process.env.ARCADA_PASSWORD;
 
-if (!/^[a-zA-Z0-9._-]+$/.test(username ?? '')) {
+type Session = Readonly<{ host: string; client: Client; sftp: SFTPWrapper; revision: string }>;
+type LocalSite = Readonly<{
+  files: ReadonlyMap<string, Readonly<{ absolute: string; size: number }>>;
+  dirs: ReadonlySet<string>;
+}>;
+type RemoteSite = Readonly<{ files: ReadonlySet<string>; dirs: ReadonlySet<string> }>;
+
+if (!/^[a-zA-Z0-9._-]+$/.test(USERNAME ?? '')) {
   throw new Error('ARCADA_USERNAME must be a bare account name.');
 }
-if (!password) {
+if (!PASSWORD) {
   throw new Error('Set ARCADA_PASSWORD in the domus environment.');
 }
 
@@ -71,18 +77,18 @@ const connect = (host: string): Promise<Client> =>
       }
     });
     client.on('keyboard-interactive', (_name, _instructions, _language, prompts, finish) => {
-      finish(prompts.map(() => password));
+      finish(prompts.map(() => PASSWORD));
     });
     const verifyHostKey = (key: Buffer) =>
       key.length === pinned.length && timingSafeEqual(key, pinned);
     client.connect({
       host,
       hostVerifier: verifyHostKey,
-      password,
-      port: sshPort,
-      readyTimeout: readyTimeoutMs,
+      password: PASSWORD,
+      port: SSH_PORT,
+      readyTimeout: READY_TIMEOUT_MS,
       tryKeyboard: true,
-      username,
+      username: USERNAME,
     });
   });
 
@@ -176,10 +182,12 @@ const remotePath = (relative: string): string => {
   ) {
     throw new Error(`Unsafe remote path: ${relative}`);
   }
-  return posix.join(remoteRoot, relative);
+  return posix.join(REMOTE_ROOT, relative);
 };
 
-const isProtectedPath = (relative: string): boolean => protectedPaths.has(posix.basename(relative));
+const isProtectedPath = (relative: string): boolean =>
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
+  PROTECTED_PATHS.has(posix.basename(relative) as ProtectedPath);
 
 const sortPaths = (
   values: Iterable<string>,
@@ -214,14 +222,14 @@ const openSession = async (host: string): Promise<Session> => {
 };
 
 const discoverSessions = async (): Promise<Session[]> => {
-  const results = await Promise.allSettled(hosts.map(openSession));
+  const results = await Promise.allSettled(HOSTS.map(openSession));
   const sessions: Session[] = [];
   for (const [index, result] of results.entries()) {
     if (result.status === 'fulfilled') {
       sessions.push(result.value);
-      process.stdout.write(`${hosts[index]}: target verified, ${result.value.revision}\n`);
+      process.stdout.write(`${HOSTS[index]}: target verified, ${result.value.revision}\n`);
     } else {
-      process.stdout.write(`${hosts[index]}: ${errorText(result.reason)}\n`);
+      process.stdout.write(`${HOSTS[index]}: ${errorText(result.reason)}\n`);
     }
   }
   return sessions;
@@ -233,7 +241,7 @@ const verifySharedStorage = async (sessions: Session[]): Promise<Session[]> => {
   }
   const primary = sessions[0];
   const sharedPath = remotePath(`.personal-site-share-${randomUUID()}`);
-  const sharedToken = randomBytes(shareTokenBytes);
+  const sharedToken = randomBytes(SHARE_TOKEN_BYTES);
   await writeRemote(primary.sftp, sharedPath, sharedToken);
   try {
     const results = await Promise.allSettled(
@@ -246,7 +254,7 @@ const verifySharedStorage = async (sessions: Session[]): Promise<Session[]> => {
           return session;
         }
         const returnPath = remotePath(`.personal-site-share-${randomUUID()}`);
-        const returnToken = randomBytes(shareTokenBytes);
+        const returnToken = randomBytes(SHARE_TOKEN_BYTES);
         await writeRemote(session.sftp, returnPath, returnToken);
         try {
           const returned = await readRemote(primary.sftp, returnPath);
@@ -302,7 +310,7 @@ const scanLocal = async (): Promise<LocalSite> => {
       }),
     );
   };
-  await visit(siteRoot, '');
+  await visit(SITE_ROOT, '');
   if (!files.has('index.html')) {
     throw new Error('The build is missing index.html.');
   }
@@ -313,7 +321,7 @@ const scanRemote = async (sftp: SFTPWrapper): Promise<RemoteSite> => {
   const files = new Set<string>();
   const dirs = new Set<string>();
   const visit = async (relative: string): Promise<void> => {
-    const entries = await listRemote(sftp, relative ? remotePath(relative) : remoteRoot);
+    const entries = await listRemote(sftp, relative ? remotePath(relative) : REMOTE_ROOT);
     await Promise.all(
       entries.map(async (entry) => {
         const name = entry.filename;
@@ -367,7 +375,7 @@ const runBucket = async (session: Session, items: string[], action: ItemAction):
     await action(session, item);
     await next();
   };
-  await settleAll(Array.from({ length: Math.min(perHostConcurrency, items.length) }, next));
+  await settleAll(Array.from({ length: Math.min(PER_HOST_CONCURRENCY, items.length) }, next));
 };
 
 const runDistributed = async (
@@ -472,7 +480,7 @@ const verifyPublic = async (expected: string, remaining: number): Promise<void> 
   const url = `https://people.arcada.fi/~bergenwb/deployment.json?rev=${revision}`;
   const actual = await fetch(url, {
     headers: { 'Cache-Control': 'no-cache' },
-    signal: AbortSignal.timeout(publicRequestTimeoutMs),
+    signal: AbortSignal.timeout(PUBLIC_REQUEST_TIMEOUT_MS),
   })
     .then((response) => (response.ok ? response.text() : ''))
     .catch(() => '');
@@ -484,7 +492,7 @@ const verifyPublic = async (expected: string, remaining: number): Promise<void> 
     throw new Error('The public site did not serve the deployed revision.');
   }
   await new Promise((resolve) => {
-    setTimeout(resolve, publicCheckDelayMs);
+    setTimeout(resolve, PUBLIC_CHECK_DELAY_MS);
   });
   await verifyPublic(expected, remaining - 1);
 };
@@ -501,7 +509,7 @@ if (process.argv.includes('--plan')) {
   try {
     sessions = await discoverSessions();
     if (process.argv.includes('--probe')) {
-      process.stdout.write(`${sessions.length} of ${hosts.length} SFTP targets verified.\n`);
+      process.stdout.write(`${sessions.length} of ${HOSTS.length} SFTP targets verified.\n`);
     } else {
       const local = await scanLocal();
       const shared = await verifySharedStorage(sessions);
@@ -514,6 +522,6 @@ if (process.argv.includes('--plan')) {
     }
   }
   if (receipt) {
-    await verifyPublic(receipt, publicCheckAttempts);
+    await verifyPublic(receipt, PUBLIC_CHECK_ATTEMPTS);
   }
 }
