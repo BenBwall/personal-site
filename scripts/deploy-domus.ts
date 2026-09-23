@@ -3,7 +3,7 @@ import { readFile, readdir, stat } from 'node:fs/promises';
 import { posix, resolve as resolvePath } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { Client } from 'ssh2';
+import { Client, type FileEntryWithStats, type SFTPWrapper } from 'ssh2';
 
 const sshPort = 22;
 const readyTimeoutMs = 10_000;
@@ -21,8 +21,12 @@ const protectedPaths = new Set(['.htaccess', '.personal-site-deploy-target', 'de
 const username = process.env.ARCADA_USERNAME;
 const password = process.env.ARCADA_PASSWORD;
 
-/** @typedef {import('ssh2').SFTPWrapper} Sftp */
-/** @typedef {{ host: string, client: Client, sftp: Sftp, revision: string }} Session */
+type Session = { host: string; client: Client; sftp: SFTPWrapper; revision: string };
+type LocalSite = {
+  files: Map<string, { absolute: string; size: number }>;
+  dirs: Set<string>;
+};
+type RemoteSite = { files: Set<string>; dirs: Set<string> };
 
 if (!/^[a-zA-Z0-9._-]+$/.test(username ?? '')) {
   throw new Error('ARCADA_USERNAME must be a bare account name.');
@@ -38,8 +42,7 @@ const knownHosts = await readFile(
 const expectedMarker = await readFile(
   fileURLToPath(new URL('../.github/domus-deploy-target', import.meta.url)),
 );
-/** @type {Map<string, Buffer>} */
-const pinnedKeys = new Map(
+const pinnedKeys = new Map<string, Buffer>(
   knownHosts
     .split(/\r?\n/)
     .filter(Boolean)
@@ -49,9 +52,8 @@ const pinnedKeys = new Map(
     }),
 );
 
-/** @param {string} host @returns {Promise<Client>} */
-const connect = (host) =>
-  new Promise((resolve, reject) => {
+const connect = (host: string): Promise<Client> =>
+  new Promise<Client>((resolve, reject) => {
     const pinned = pinnedKeys.get(host);
     if (!pinned) {
       reject(new Error(`No pinned host key for ${host}`));
@@ -71,8 +73,8 @@ const connect = (host) =>
     client.on('keyboard-interactive', (_name, _instructions, _language, prompts, finish) => {
       finish(prompts.map(() => password));
     });
-    /** @param {Buffer} key */
-    const verifyHostKey = (key) => key.length === pinned.length && timingSafeEqual(key, pinned);
+    const verifyHostKey = (key: Buffer) =>
+      key.length === pinned.length && timingSafeEqual(key, pinned);
     client.connect({
       host,
       hostVerifier: verifyHostKey,
@@ -84,14 +86,13 @@ const connect = (host) =>
     });
   });
 
-/** @param {Client} client @returns {Promise<import('ssh2').SFTPWrapper>} */
-const openSftp = (client) =>
-  new Promise((resolve, reject) => {
+const openSftp = (client: Client): Promise<SFTPWrapper> =>
+  new Promise<SFTPWrapper>((resolve, reject) => {
     client.sftp((error, sftp) => {
       if (error) {
         reject(error);
       } else {
-        sftp.on('error', (channelError) => {
+        sftp.on('error', (channelError: unknown) => {
           process.stderr.write(
             `SFTP channel error: ${channelError instanceof Error ? channelError.message : String(channelError)}\n`,
           );
@@ -101,9 +102,8 @@ const openSftp = (client) =>
     });
   });
 
-/** @param {import('ssh2').SFTPWrapper} sftp @param {string} path @returns {Promise<Buffer>} */
-const readRemote = (sftp, path) =>
-  new Promise((resolve, reject) => {
+const readRemote = (sftp: SFTPWrapper, path: string): Promise<Buffer> =>
+  new Promise<Buffer>((resolve, reject) => {
     sftp.readFile(path, (error, data) => {
       if (error) {
         reject(error);
@@ -113,9 +113,8 @@ const readRemote = (sftp, path) =>
     });
   });
 
-/** @param {Sftp} sftp @param {string} path @param {Buffer} content @returns {Promise<void>} */
-const writeRemote = (sftp, path, content) =>
-  new Promise((resolve, reject) => {
+const writeRemote = (sftp: SFTPWrapper, path: string, content: Buffer): Promise<void> =>
+  new Promise<void>((resolve, reject) => {
     sftp.writeFile(path, content, (error) => {
       if (error) {
         reject(error);
@@ -125,9 +124,8 @@ const writeRemote = (sftp, path, content) =>
     });
   });
 
-/** @param {Sftp} sftp @param {string} path @returns {Promise<import('ssh2').FileEntryWithStats[]>} */
-const listRemote = (sftp, path) =>
-  new Promise((resolve, reject) => {
+const listRemote = (sftp: SFTPWrapper, path: string): Promise<FileEntryWithStats[]> =>
+  new Promise<FileEntryWithStats[]>((resolve, reject) => {
     sftp.readdir(path, (error, entries) => {
       if (error) {
         reject(error);
@@ -137,9 +135,8 @@ const listRemote = (sftp, path) =>
     });
   });
 
-/** @param {Sftp} sftp @param {string} path @returns {Promise<void>} */
-const makeRemoteDir = (sftp, path) =>
-  new Promise((resolve, reject) => {
+const makeRemoteDir = (sftp: SFTPWrapper, path: string): Promise<void> =>
+  new Promise<void>((resolve, reject) => {
     sftp.mkdir(path, (error) => {
       if (error) {
         reject(error);
@@ -149,9 +146,8 @@ const makeRemoteDir = (sftp, path) =>
     });
   });
 
-/** @param {Sftp} sftp @param {string} path @returns {Promise<void>} */
-const removeRemoteFile = (sftp, path) =>
-  new Promise((resolve, reject) => {
+const removeRemoteFile = (sftp: SFTPWrapper, path: string): Promise<void> =>
+  new Promise<void>((resolve, reject) => {
     sftp.unlink(path, (error) => {
       if (error) {
         reject(error);
@@ -161,9 +157,8 @@ const removeRemoteFile = (sftp, path) =>
     });
   });
 
-/** @param {Sftp} sftp @param {string} path @returns {Promise<void>} */
-const removeRemoteDir = (sftp, path) =>
-  new Promise((resolve, reject) => {
+const removeRemoteDir = (sftp: SFTPWrapper, path: string): Promise<void> =>
+  new Promise<void>((resolve, reject) => {
     sftp.rmdir(path, (error) => {
       if (error) {
         reject(error);
@@ -173,8 +168,7 @@ const removeRemoteDir = (sftp, path) =>
     });
   });
 
-/** @param {string} relative */
-const remotePath = (relative) => {
+const remotePath = (relative: string): string => {
   if (
     !relative ||
     relative.startsWith('/') ||
@@ -185,24 +179,23 @@ const remotePath = (relative) => {
   return posix.join(remoteRoot, relative);
 };
 
-/** @param {string} relative */
-const isProtectedPath = (relative) => protectedPaths.has(posix.basename(relative));
+const isProtectedPath = (relative: string): boolean => protectedPaths.has(posix.basename(relative));
 
-/** @param {Iterable<string>} values @param {(left: string, right: string) => number} [compare] */
-const sortPaths = (values, compare = (left, right) => left.localeCompare(right)) => {
+const sortPaths = (
+  values: Iterable<string>,
+  compare = (left: string, right: string) => left.localeCompare(right),
+): string[] => {
   const copy = [...values];
   // The configured TypeScript lib omits toSorted; the copied array is safe to mutate.
   // oxlint-disable-next-line unicorn/no-array-sort
   return copy.sort(compare);
 };
 
-/** @param {unknown} error */
-const errorText = (error) => (error instanceof Error ? error.message : String(error));
+const errorText = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
 
-/** @param {string} host @returns {Promise<Session>} */
-const openSession = async (host) => {
-  /** @type {Client | undefined} */
-  let client;
+const openSession = async (host: string): Promise<Session> => {
+  let client: Client | undefined;
   try {
     client = await connect(host);
     const sftp = await openSftp(client);
@@ -220,11 +213,9 @@ const openSession = async (host) => {
   }
 };
 
-/** @returns {Promise<Session[]>} */
-const discoverSessions = async () => {
+const discoverSessions = async (): Promise<Session[]> => {
   const results = await Promise.allSettled(hosts.map(openSession));
-  /** @type {Session[]} */
-  const sessions = [];
+  const sessions: Session[] = [];
   for (const [index, result] of results.entries()) {
     if (result.status === 'fulfilled') {
       sessions.push(result.value);
@@ -236,8 +227,7 @@ const discoverSessions = async () => {
   return sessions;
 };
 
-/** @param {Session[]} sessions @returns {Promise<Session[]>} */
-const verifySharedStorage = async (sessions) => {
+const verifySharedStorage = async (sessions: Session[]): Promise<Session[]> => {
   if (sessions.length === 0) {
     throw new Error('No verified SFTP host is available.');
   }
@@ -269,8 +259,7 @@ const verifySharedStorage = async (sessions) => {
         }
       }),
     );
-    /** @type {Session[]} */
-    const shared = [];
+    const shared: Session[] = [];
     for (const [index, result] of results.entries()) {
       if (result.status === 'fulfilled') {
         shared.push(result.value);
@@ -286,14 +275,10 @@ const verifySharedStorage = async (sessions) => {
   }
 };
 
-/** @returns {Promise<{ files: Map<string, { absolute: string, size: number }>, dirs: Set<string> }>} */
-const scanLocal = async () => {
-  /** @type {Map<string, { absolute: string, size: number }>} */
-  const files = new Map();
-  /** @type {Set<string>} */
-  const dirs = new Set();
-  /** @type {(directory: string, relative: string) => Promise<void>} */
-  const visit = async (directory, relative) => {
+const scanLocal = async (): Promise<LocalSite> => {
+  const files = new Map<string, { absolute: string; size: number }>();
+  const dirs = new Set<string>();
+  const visit = async (directory: string, relative: string): Promise<void> => {
     const entries = await readdir(directory, { withFileTypes: true });
     await Promise.all(
       entries.map(async (entry) => {
@@ -324,14 +309,10 @@ const scanLocal = async () => {
   return { dirs, files };
 };
 
-/** @param {Sftp} sftp @returns {Promise<{ files: Set<string>, dirs: Set<string> }>} */
-const scanRemote = async (sftp) => {
-  /** @type {Set<string>} */
-  const files = new Set();
-  /** @type {Set<string>} */
-  const dirs = new Set();
-  /** @type {(relative: string) => Promise<void>} */
-  const visit = async (relative) => {
+const scanRemote = async (sftp: SFTPWrapper): Promise<RemoteSite> => {
+  const files = new Set<string>();
+  const dirs = new Set<string>();
+  const visit = async (relative: string): Promise<void> => {
     const entries = await listRemote(sftp, relative ? remotePath(relative) : remoteRoot);
     await Promise.all(
       entries.map(async (entry) => {
@@ -365,8 +346,7 @@ const scanRemote = async (sftp) => {
   return { dirs, files };
 };
 
-/** @param {Promise<void>[]} tasks */
-const settleAll = async (tasks) => {
+const settleAll = async (tasks: Promise<void>[]): Promise<void> => {
   const results = await Promise.allSettled(tasks);
   const failure = results.find((result) => result.status === 'rejected');
   if (failure?.status === 'rejected') {
@@ -374,8 +354,9 @@ const settleAll = async (tasks) => {
   }
 };
 
-/** @param {Session} session @param {string[]} items @param {(session: Session, item: string) => Promise<void>} action */
-const runBucket = async (session, items, action) => {
+type ItemAction = (session: Session, item: string) => Promise<void>;
+
+const runBucket = async (session: Session, items: string[], action: ItemAction): Promise<void> => {
   let cursor = 0;
   const next = async () => {
     if (cursor >= items.length) {
@@ -389,18 +370,19 @@ const runBucket = async (session, items, action) => {
   await settleAll(Array.from({ length: Math.min(perHostConcurrency, items.length) }, next));
 };
 
-/** @param {Session[]} sessions @param {string[]} items @param {(session: Session, item: string) => Promise<void>} action */
-const runDistributed = async (sessions, items, action) => {
-  /** @type {string[][]} */
-  const buckets = sessions.map(() => []);
+const runDistributed = async (
+  sessions: Session[],
+  items: string[],
+  action: ItemAction,
+): Promise<void> => {
+  const buckets: string[][] = sessions.map(() => []);
   for (const [index, item] of items.entries()) {
     buckets[index % sessions.length].push(item);
   }
   await settleAll(sessions.map((session, index) => runBucket(session, buckets[index], action)));
 };
 
-/** @param {Session[]} sessions @param {Awaited<ReturnType<typeof scanLocal>>} local */
-const syncSite = async (sessions, local) => {
+const syncSite = async (sessions: Session[], local: LocalSite): Promise<string> => {
   if (sessions.length === 0) {
     throw new Error('No SFTP host shares the marked target directory.');
   }
@@ -485,8 +467,7 @@ const syncSite = async (sessions, local) => {
   return receipt.toString('utf8').trim();
 };
 
-/** @param {string} expected @param {number} remaining */
-const verifyPublic = async (expected, remaining) => {
+const verifyPublic = async (expected: string, remaining: number): Promise<void> => {
   const revision = process.env.GITHUB_SHA;
   const url = `https://people.arcada.fi/~bergenwb/deployment.json?rev=${revision}`;
   const actual = await fetch(url, {
@@ -515,10 +496,8 @@ if (process.argv.includes('--plan')) {
     `Build: ${local.files.size} files, ${local.dirs.size} directories, ${bytes} bytes.\n`,
   );
 } else {
-  /** @type {Session[]} */
-  let sessions = [];
-  /** @type {string | undefined} */
-  let receipt;
+  let sessions: Session[] = [];
+  let receipt: string | undefined;
   try {
     sessions = await discoverSessions();
     if (process.argv.includes('--probe')) {

@@ -1,14 +1,13 @@
 import { readFile, readdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
+import type { Adapter } from '@sveltejs/kit';
 import { minify } from 'vite';
 
 /**
  * Minify copied static scripts before the adapter writes and compresses them.
- * @param {import('@sveltejs/kit').Adapter} adapter
- * @returns {import('@sveltejs/kit').Adapter}
  */
-export const minifyStaticJs = (adapter) => ({
+export const minifyStaticJs = (adapter: Adapter): Adapter => ({
   ...adapter,
   async adapt(builder) {
     const files = await readdir('static', { recursive: true });

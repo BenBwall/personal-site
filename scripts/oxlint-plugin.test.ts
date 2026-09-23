@@ -1,6 +1,6 @@
 import { RuleTester } from 'oxlint/plugins-dev';
 
-import { noFunctionKeyword } from '#scripts/oxlint-plugin.js';
+import { noFunctionKeyword } from '#scripts/oxlint-plugin.ts';
 
 const tester = new RuleTester({
   languageOptions: { parserOptions: { lang: 'ts' }, sourceType: 'module' },
