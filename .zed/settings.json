@@ -1,0 +1,83 @@
+{
+  "lsp": {
+    "oxlint": {
+      "initialization_options": {
+        "settings": {
+          "run": "onSave"
+        }
+      }
+    }
+  },
+  "languages": {
+    "JavaScript": {
+      "language_servers": ["oxlint", "..."],
+      "code_actions_on_format": {
+        "source.fixAll.oxc": true
+      },
+      "format_on_save": "on",
+      "formatter": {
+        "external": {
+          "command": "bun",
+          "arguments": ["run", "--silent", "fmt", "--stdin-filepath", "{buffer_path}"]
+        }
+      }
+    },
+    "TypeScript": {
+      "language_servers": ["oxlint", "..."],
+      "code_actions_on_format": {
+        "source.fixAll.oxc": true
+      },
+      "format_on_save": "on",
+      "formatter": {
+        "external": {
+          "command": "bun",
+          "arguments": ["run", "--silent", "fmt", "--stdin-filepath", "{buffer_path}"]
+        }
+      }
+    },
+    "TSX": {
+      "language_servers": ["oxlint", "..."],
+      "code_actions_on_format": {
+        "source.fixAll.oxc": true
+      },
+      "format_on_save": "on",
+      "formatter": {
+        "external": {
+          "command": "bun",
+          "arguments": ["run", "--silent", "fmt", "--stdin-filepath", "{buffer_path}"]
+        }
+      }
+    },
+    "JSON": {
+      "format_on_save": "on",
+      "formatter": {
+        "external": {
+          "command": "bun",
+          "arguments": ["run", "--silent", "fmt", "--stdin-filepath", "{buffer_path}"]
+        }
+      }
+    },
+    "JSONC": {
+      "format_on_save": "on",
+      "formatter": {
+        "external": {
+          "command": "bun",
+          "arguments": ["run", "--silent", "fmt", "--stdin-filepath", "{buffer_path}"]
+        }
+      }
+    },
+    "Svelte": {
+      "language_servers": ["oxlint", "..."],
+      "code_actions_on_format": {
+        "source.fixAll.oxc": true
+      },
+      "format_on_save": "on",
+      "formatter": {
+        "external": {
+          "command": "bun",
+          "arguments": ["run", "--silent", "fmt", "--stdin-filepath", "{buffer_path}"]
+        }
+      }
+    }
+  }
+}
