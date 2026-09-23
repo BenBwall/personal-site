@@ -1,7 +1,4 @@
 (() => {
-  const maxChroma = 0.5;
-  const fullHueRotation = 360;
-
   try {
     const scheme = localStorage.getItem('color-scheme');
     if (scheme === 'light' || scheme === 'dark') {
@@ -39,7 +36,7 @@
       typeof theme.chroma === 'number' &&
       Number.isFinite(theme.chroma) &&
       theme.chroma >= 0 &&
-      theme.chroma <= maxChroma
+      theme.chroma <= 0.5
     ) {
       document.documentElement.style.setProperty('--theme-chroma', String(theme.chroma));
     }
@@ -48,7 +45,7 @@
       typeof theme.hue === 'number' &&
       Number.isInteger(theme.hue) &&
       theme.hue >= 0 &&
-      theme.hue <= fullHueRotation
+      theme.hue <= 360
     ) {
       document.documentElement.style.setProperty('--theme-hue', String(theme.hue));
     }

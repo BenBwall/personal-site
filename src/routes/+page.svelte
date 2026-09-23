@@ -2,16 +2,7 @@
   import { asset } from '$app/paths';
   import { Heading, Text } from '$lib/components/typography';
 
-  const smallPhotoWidth = 320;
-  const mediumPhotoWidth = 480;
-  const largePhotoWidth = 640;
-  const extraLargePhotoWidth = 960;
-  const photoWidths = [
-    smallPhotoWidth,
-    mediumPhotoWidth,
-    largePhotoWidth,
-    extraLargePhotoWidth,
-  ] as const;
+  const photoWidths = [320, 480, 640, 960] as const;
   const photos = [
     { alt: 'Me sitting outdoors by the sea', name: 'sitting-outdoors-by-the-sea' },
     { alt: 'Me standing on a cliff on the beach', name: 'standing-on-a-cliff-on-the-beach' },

@@ -4,22 +4,17 @@ export const fullHueRotation = 360;
 export const maxChroma = 0.5;
 export const maxRainbowIntervalMs = 2_147_483_647;
 
-const defaultChroma = 0.14;
-const defaultHue = 250;
-const defaultLuminosity = 0.6;
-const defaultRainbowIntervalMs = 100;
-
 const themeSchema = z.object({
-  chroma: z.number().min(0).max(maxChroma).default(defaultChroma),
-  hue: z.int().min(0).max(fullHueRotation).default(defaultHue),
-  luminosity: z.number().min(0).max(1).default(defaultLuminosity),
+  chroma: z.number().min(0).max(maxChroma).default(0.14),
+  hue: z.int().min(0).max(fullHueRotation).default(250),
+  luminosity: z.number().min(0).max(1).default(0.6),
   rainbowEnabled: z.boolean().default(false),
   rainbowIncrement: z
     .int()
     .min(1)
     .max(fullHueRotation - 1)
     .default(1),
-  rainbowIntervalMs: z.int().min(1).max(maxRainbowIntervalMs).default(defaultRainbowIntervalMs),
+  rainbowIntervalMs: z.int().min(1).max(maxRainbowIntervalMs).default(100),
 });
 
 export type Theme = z.infer<typeof themeSchema>;

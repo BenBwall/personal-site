@@ -4,16 +4,7 @@
   import { projects } from '$lib/data/projects';
   import { siGithub } from 'simple-icons';
 
-  const smallPreviewWidth = 320;
-  const mediumPreviewWidth = 480;
-  const largePreviewWidth = 640;
-  const extraLargePreviewWidth = 960;
-  const previewWidths = [
-    smallPreviewWidth,
-    mediumPreviewWidth,
-    largePreviewWidth,
-    extraLargePreviewWidth,
-  ];
+  const previewWidths = [320, 480, 640, 960];
   const previewSizes = '(max-width: 38rem) calc(100vw - 2rem), 36rem';
   const previewSources = (name: string, format: 'avif' | 'webp') =>
     previewWidths

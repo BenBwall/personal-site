@@ -5,12 +5,6 @@ import { fileURLToPath } from 'node:url';
 
 import { Client, type FileEntryWithStats, type SFTPWrapper } from 'ssh2';
 
-const SSH_PORT = 22;
-const READY_TIMEOUT_MS = 10_000;
-const PER_HOST_CONCURRENCY = 3;
-const PUBLIC_CHECK_ATTEMPTS = 10;
-const PUBLIC_CHECK_DELAY_MS = 3_000;
-const PUBLIC_REQUEST_TIMEOUT_MS = 15_000;
 const SHARE_TOKEN_BYTES = 32;
 const REMOTE_ROOT = '/home/b/bergenwb/html';
 const HOSTS = ['penti.arcada.fi', 'xena.arcada.fi', 'gabrielle.arcada.fi'] as const;
@@ -85,8 +79,8 @@ const connect = (host: string): Promise<Client> =>
       host,
       hostVerifier: verifyHostKey,
       password: PASSWORD,
-      port: SSH_PORT,
-      readyTimeout: READY_TIMEOUT_MS,
+      port: 22,
+      readyTimeout: 10_000,
       tryKeyboard: true,
       username: USERNAME,
     });
@@ -375,7 +369,7 @@ const runBucket = async (session: Session, items: string[], action: ItemAction):
     await action(session, item);
     await next();
   };
-  await settleAll(Array.from({ length: Math.min(PER_HOST_CONCURRENCY, items.length) }, next));
+  await settleAll(Array.from({ length: Math.min(3, items.length) }, next));
 };
 
 const runDistributed = async (
@@ -480,7 +474,7 @@ const verifyPublic = async (expected: string, remaining: number): Promise<void> 
   const url = `https://people.arcada.fi/~bergenwb/deployment.json?rev=${revision}`;
   const actual = await fetch(url, {
     headers: { 'Cache-Control': 'no-cache' },
-    signal: AbortSignal.timeout(PUBLIC_REQUEST_TIMEOUT_MS),
+    signal: AbortSignal.timeout(15_000),
   })
     .then((response) => (response.ok ? response.text() : ''))
     .catch(() => '');
@@ -492,7 +486,7 @@ const verifyPublic = async (expected: string, remaining: number): Promise<void> 
     throw new Error('The public site did not serve the deployed revision.');
   }
   await new Promise((resolve) => {
-    setTimeout(resolve, PUBLIC_CHECK_DELAY_MS);
+    setTimeout(resolve, 3_000);
   });
   await verifyPublic(expected, remaining - 1);
 };
@@ -522,6 +516,6 @@ if (process.argv.includes('--plan')) {
     }
   }
   if (receipt) {
-    await verifyPublic(receipt, PUBLIC_CHECK_ATTEMPTS);
+    await verifyPublic(receipt, 10);
   }
 }
