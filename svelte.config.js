@@ -28,6 +28,9 @@ const config = {
       },
       mode: 'hash',
     },
+    paths: {
+      base: process.env.BASE_PATH ?? '',
+    },
   },
   preprocess: vitePreprocess(),
 };
