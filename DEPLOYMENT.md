@@ -2,7 +2,7 @@
 
 Every push to `main` runs `.github/workflows/deploy-domus.yml`. GitHub builds the
 static site for `https://people.arcada.fi/~bergenwb/` and syncs `dist/` to the
-Domus `html` directory over SFTP. The JavaScript publisher connects to
+Domus `html` directory over SFTP. The TypeScript publisher runs with Bun and connects to
 `penti.arcada.fi`, `xena.arcada.fi`, and `gabrielle.arcada.fi`. It verifies the
 target marker at `/home/b/bergenwb/html/.personal-site-deploy-target` on each
 host and proves that their writes are visible through the same directory before

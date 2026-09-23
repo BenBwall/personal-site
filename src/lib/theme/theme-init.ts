@@ -11,8 +11,7 @@
 
   let reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   try {
-    /** @type {unknown} */
-    const saved = JSON.parse(localStorage.getItem('appearance-preferences') ?? '{}');
+    const saved: unknown = JSON.parse(localStorage.getItem('appearance-preferences') ?? '{}');
     if (typeof saved === 'object' && saved !== null) {
       if ('reducedMotion' in saved && typeof saved.reducedMotion === 'boolean') {
         reducedMotion = saved.reducedMotion;
@@ -22,8 +21,7 @@
   document.documentElement.dataset.reducedMotion = String(reducedMotion);
 
   try {
-    /** @type {unknown} */
-    const theme = JSON.parse(localStorage.getItem('theme') ?? 'null');
+    const theme: unknown = JSON.parse(localStorage.getItem('theme') ?? 'null');
     if (typeof theme !== 'object' || theme === null) {
       return;
     }

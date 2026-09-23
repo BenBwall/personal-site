@@ -1,4 +1,5 @@
-/** @type {Parameters<import('oxlint/plugins-dev').RuleTester['run']>[1]} */
+import type { RuleTester } from 'oxlint/plugins-dev';
+
 export const noFunctionKeyword = {
   createOnce(context) {
     return {
@@ -37,7 +38,7 @@ export const noFunctionKeyword = {
     schema: [],
     type: 'suggestion',
   },
-};
+} satisfies Parameters<RuleTester['run']>[1];
 
 export default {
   meta: { name: 'personal-site' },

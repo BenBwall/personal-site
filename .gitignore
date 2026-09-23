@@ -12,6 +12,7 @@ dist
 dist-ssr
 .svelte-kit
 /static/images/generated/
+/static/theme-init.js
 *.local
 
 # Editor directories and files

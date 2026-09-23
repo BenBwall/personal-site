@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["unicorn", "typescript", "oxc", "import"],
-  "jsPlugins": ["./scripts/oxlint-plugin.js"],
+  "jsPlugins": ["./scripts/oxlint-plugin.ts"],
   "categories": {
     "correctness": "error",
     "suspicious": "error"
@@ -292,7 +292,7 @@
         "patterns": [
           {
             "regex": "^\\.{1,2}([/\\\\]|$)",
-            "message": "Use a path alias instead of a relative import. App aliases are defined in svelte.config.js; Node aliases are defined in package.json imports."
+            "message": "Use a path alias instead of a relative import. App aliases are defined in svelte.config.ts; Node aliases are defined in package.json imports."
           }
         ]
       }

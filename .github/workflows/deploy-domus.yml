@@ -53,4 +53,4 @@ jobs:
         env:
           ARCADA_USERNAME: ${{ secrets.ARCADA_USERNAME }}
           ARCADA_PASSWORD: ${{ secrets.ARCADA_PASSWORD }}
-        run: node scripts/deploy-domus.js
+        run: bun scripts/deploy-domus.ts

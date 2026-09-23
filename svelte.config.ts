@@ -1,10 +1,15 @@
 import adapter from '@sveltejs/adapter-static';
+import type { Config } from '@sveltejs/kit';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
-import { minifyStaticJs } from '#scripts/minify-static-js.js';
+import { minifyStaticJs } from '#scripts/minify-static-js.ts';
 
-/** @type {import('@sveltejs/kit').Config} */
-const config = {
+const basePath = process.env.BASE_PATH ?? '';
+if (basePath && !basePath.startsWith('/')) {
+  throw new Error('BASE_PATH must begin with a slash.');
+}
+
+const config: Config = {
   kit: {
     adapter: minifyStaticJs(
       adapter({
@@ -29,7 +34,7 @@ const config = {
       mode: 'hash',
     },
     paths: {
-      base: process.env.BASE_PATH ?? '',
+      base: basePath as '' | `/${string}`,
     },
   },
   preprocess: vitePreprocess(),
