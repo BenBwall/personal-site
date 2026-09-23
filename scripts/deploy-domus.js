@@ -79,19 +79,27 @@ const openSftp = (client) =>
       if (error) {
         reject(error);
       } else {
+        sftp.on('error', (channelError) => {
+          process.stderr.write(
+            `SFTP channel error: ${channelError instanceof Error ? channelError.message : String(channelError)}\n`,
+          );
+        });
         resolve(sftp);
       }
     });
   });
 
-/** @param {import('ssh2').SFTPWrapper} sftp @param {string} path */
-const readRemote = async (sftp, path) => {
-  const chunks = [];
-  for await (const chunk of sftp.createReadStream(path)) {
-    chunks.push(chunk);
-  }
-  return Buffer.concat(chunks);
-};
+/** @param {import('ssh2').SFTPWrapper} sftp @param {string} path @returns {Promise<Buffer>} */
+const readRemote = (sftp, path) =>
+  new Promise((resolve, reject) => {
+    sftp.readFile(path, (error, data) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve(data);
+      }
+    });
+  });
 
 /** @param {string} host */
 const probe = async (host) => {
