@@ -4,8 +4,10 @@ import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 import { minifyStaticJs } from '#scripts/minify-static-js.ts';
 
+const isBasePath = (value: string): value is '' | `/${string}` =>
+  value === '' || value.startsWith('/');
 const basePath = process.env.BASE_PATH ?? '';
-if (basePath && !basePath.startsWith('/')) {
+if (!isBasePath(basePath)) {
   throw new Error('BASE_PATH must begin with a slash.');
 }
 
@@ -34,7 +36,7 @@ const config: Config = {
       mode: 'hash',
     },
     paths: {
-      base: basePath as '' | `/${string}`,
+      base: basePath,
     },
   },
   preprocess: vitePreprocess(),
