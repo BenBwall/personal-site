@@ -1,0 +1,22 @@
+:root {
+  /* A 1rem base respects browser font preferences; 1.2 gives modest, regular size steps. */
+  --type-ratio: 1.2;
+  --type-size-0: 1rem;
+  --type-size-small: calc(var(--type-size-0) / var(--type-ratio));
+  --type-size-1: calc(var(--type-size-0) * var(--type-ratio));
+  --type-size-2: calc(var(--type-size-1) * var(--type-ratio));
+  --type-size-3: calc(var(--type-size-2) * var(--type-ratio));
+  --type-size-4: calc(var(--type-size-3) * var(--type-ratio));
+  --type-size-5: calc(var(--type-size-4) * var(--type-ratio));
+
+  /* Unitless leading scales with text: compact headings, more room for continuous reading. */
+  --type-leading-heading: 1.25;
+  --type-leading-text: 1.5;
+
+  /* Regular body text and semibold headings provide hierarchy without changing tracking. */
+  --type-weight-text: 400;
+  --type-weight-heading: 600;
+
+  /* One base-size gap keeps the vertical rhythm consistent across headings and paragraphs. */
+  --type-gap: var(--type-size-0);
+}
