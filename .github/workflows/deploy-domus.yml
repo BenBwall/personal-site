@@ -49,6 +49,14 @@ jobs:
           path: site/
       - name: Mark the release
         run: printf '{"revision":"%s"}\n' "$GITHUB_SHA" > site/deployment.json
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+      - run: bun install --frozen-lockfile --ignore-scripts
+      - name: Probe Penti, Xena, and Gabrielle
+        continue-on-error: true
+        env:
+          ARCADA_USERNAME: ${{ secrets.ARCADA_USERNAME }}
+          ARCADA_PASSWORD: ${{ secrets.ARCADA_PASSWORD }}
+        run: node scripts/deploy-domus.js --probe
       - name: Install SFTP client
         run: |
           sudo apt-get update
