@@ -12,7 +12,8 @@
     "JavaScript": {
       "language_servers": ["oxlint", "..."],
       "code_actions_on_format": {
-        "source.fixAll.oxc": true
+        "source.fixAll.oxc": true,
+        "source.addMissingImports.ts": true
       },
       "format_on_save": "on",
       "formatter": {
@@ -25,7 +26,8 @@
     "TypeScript": {
       "language_servers": ["oxlint", "..."],
       "code_actions_on_format": {
-        "source.fixAll.oxc": true
+        "source.fixAll.oxc": true,
+        "source.addMissingImports.ts": true
       },
       "format_on_save": "on",
       "formatter": {
@@ -38,7 +40,8 @@
     "TSX": {
       "language_servers": ["oxlint", "..."],
       "code_actions_on_format": {
-        "source.fixAll.oxc": true
+        "source.fixAll.oxc": true,
+        "source.addMissingImports.ts": true
       },
       "format_on_save": "on",
       "formatter": {
