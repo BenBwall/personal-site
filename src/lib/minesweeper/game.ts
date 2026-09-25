@@ -1,7 +1,10 @@
+import { validateIsSolveable } from "./validate-solveable";
+
 export type GameConfig = {
   columns: number;
   mines: number;
   rows: number;
+  isDefinitelySolveable: boolean;
 };
 
 export const MIN_BOARD_SIZE = 5;
@@ -28,10 +31,11 @@ export const minesForDifficulty = (difficulty: Difficulty, rows: number, columns
     Math.max(1, Math.round(rows * columns * MINE_DENSITIES[difficulty])),
   );
 
-const defaultConfig: GameConfig = {
+export const defaultConfig: () => GameConfig = () => ({
   ...BOARD_SIZES.small,
   mines: minesForDifficulty('easy', BOARD_SIZES.small.rows, BOARD_SIZES.small.columns),
-};
+  isDefinitelySolveable: true,
+});
 
 export const isValidConfig = ({ columns, mines, rows }: GameConfig): boolean =>
   Number.isSafeInteger(rows) &&
@@ -59,7 +63,7 @@ export type Game = {
   revealedCount: number;
 };
 
-export const createGame = (config: GameConfig = defaultConfig): Game => {
+export const createGame = (config: GameConfig = defaultConfig()): Game => {
   if (!isValidConfig(config)) {
     throw new RangeError('Invalid Minesweeper board configuration.');
   }
@@ -102,6 +106,24 @@ const neighborsOf = (index: number, { columns, rows }: GameConfig): number[] => 
 };
 
 const placeMines = (
+  cells: Cell[],
+  safeIndex: number,
+  config: GameConfig,
+  random: () => number,
+): Cell[] => {
+  cells = placeMinesOnce(cells, safeIndex, config, random);
+  if (!config.isDefinitelySolveable) {
+    return cells;
+  }
+
+  while (!validateIsSolveable(cells)) {
+    cells = placeMinesOnce(cells, safeIndex, config, random);
+  }
+
+  return cells;
+};
+
+const placeMinesOnce = (
   cells: Cell[],
   safeIndex: number,
   config: GameConfig,
