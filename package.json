@@ -16,6 +16,7 @@
     "lint": "oxlint",
     "fmt": "oxfmt",
     "generate:resume-pdf": "bun scripts/generate-resume-pdf.ts",
+    "test:minesweeper": "bun test tests/minesweeper.test.ts",
     "test:validation": "bun test tests/validation.test.ts",
     "test:lint-rules": "node --test scripts/oxlint-plugin.test.ts"
   },
