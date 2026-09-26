@@ -1,25 +1,34 @@
-import { readFile, writeFile } from 'node:fs/promises';
+import { writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
-import { ModuleKind, ScriptTarget, transpileModule } from 'typescript';
+import { build } from 'vite';
 
 const sourcePath = fileURLToPath(new URL('../src/lib/theme/theme-init.ts', import.meta.url));
 const outputPath = fileURLToPath(new URL('../static/theme-init.js', import.meta.url));
 
-/** Compile the early browser script before Vite copies the static directory. */
+/** Bundle the early browser script and its shared parsers before Vite copies the static directory. */
 export const generateThemeInit = async (): Promise<void> => {
-  const source = await readFile(sourcePath, 'utf8');
-  const result = transpileModule(source, {
-    compilerOptions: {
-      module: ModuleKind.ESNext,
-      removeComments: true,
-      target: ScriptTarget.ES2020,
+  const result = await build({
+    build: {
+      copyPublicDir: false,
+      lib: { entry: sourcePath, formats: ['iife'], name: 'ThemeInit' },
+      minify: false,
+      target: 'es2020',
+      write: false,
     },
-    fileName: sourcePath,
-    reportDiagnostics: true,
+    configFile: false,
+    logLevel: 'silent',
+    mode: process.env.NODE_ENV ?? 'production',
+    resolve: {
+      alias: { $lib: fileURLToPath(new URL('../src/lib', import.meta.url)) },
+    },
   });
-  if (result.diagnostics?.length) {
-    throw new Error('Failed to compile the early theme script.');
+  const outputs = Array.isArray(result) ? result : [result];
+  const chunk = outputs
+    .flatMap((output) => ('output' in output ? output.output : []))
+    .find((output) => output.type === 'chunk');
+  if (!chunk) {
+    throw new Error('Failed to bundle the early theme script.');
   }
-  await writeFile(outputPath, result.outputText);
+  await writeFile(outputPath, chunk.code);
 };

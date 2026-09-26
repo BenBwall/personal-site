@@ -1,12 +1,5 @@
+import { type ColorScheme, parseColorScheme } from '$lib/theme/parsing';
 import { on } from 'svelte/events';
-
-type ColorScheme = 'light' | 'dark';
-
-const isColorScheme = (value: unknown): value is ColorScheme =>
-  value === 'light' || value === 'dark';
-
-const isColorSchemeOrNull = (value: unknown): value is ColorScheme | null =>
-  value === null || isColorScheme(value);
 
 export const colorScheme = $state<{ current: ColorScheme }>({
   current: 'light',
@@ -21,10 +14,7 @@ const applyColorScheme = (scheme: ColorScheme) => {
 
 const readColorSchemeFromStorage = () => {
   try {
-    const storedScheme = window.localStorage.getItem('color-scheme');
-    if (isColorScheme(storedScheme)) {
-      return storedScheme;
-    }
+    return parseColorScheme(window.localStorage.getItem('color-scheme'));
   } catch {}
   return null;
 };
@@ -40,12 +30,11 @@ export const initializeColorScheme = (): (() => void) => {
     updateColorScheme();
   });
   const unsubscribeStorage = on(window, 'storage', (e) => {
-    if (
-      e.key === 'color-scheme' &&
-      e.storageArea === window.localStorage &&
-      isColorSchemeOrNull(e.newValue)
-    ) {
-      updateColorScheme(e.newValue);
+    if (e.key === 'color-scheme' && e.storageArea === window.localStorage) {
+      const scheme = parseColorScheme(e.newValue);
+      if (scheme !== null || e.newValue === null) {
+        updateColorScheme(scheme);
+      }
     }
   });
   return () => {
