@@ -1,0 +1,41 @@
+{
+  "$schema": "./node_modules/fallow/schema.json",
+  "minimumVersion": "3.28.0",
+  "entry": ["scripts/deploy-domus.ts"],
+  "ignorePatterns": ["static/theme-init.js", "static/images/generated/**"],
+  "duplicates": {
+    "enabled": true,
+    "mode": "strict",
+    "minTokens": 50,
+    "minLines": 5,
+    "minOccurrences": 2,
+    "threshold": 0.01,
+  },
+  "health": {
+    "maxCyclomatic": 20,
+    "maxCognitive": 15,
+    // No coverage report is available; keep measured complexity gates, not estimated CRAP scores.
+    "maxCrap": 0,
+    "maxUnitSize": 60,
+  },
+  "boundaries": {
+    "zones": [
+      { "name": "tests", "patterns": ["tests/**", "scripts/**/*.test.ts"] },
+      { "name": "app", "patterns": ["src/**"] },
+      { "name": "scripts", "patterns": ["scripts/**"] },
+      { "name": "tooling", "patterns": ["*.ts", "*.js", "*.mjs"] },
+    ],
+    "rules": [
+      { "from": "app", "allow": [] },
+      { "from": "scripts", "allow": ["app"] },
+      { "from": "tests", "allow": ["app", "scripts"] },
+      { "from": "tooling", "allow": ["scripts"] },
+    ],
+    "coverage": { "requireAllFiles": true },
+  },
+  "rules": {
+    "boundary-violation": "error",
+    "stale-suppressions": "error",
+    "require-suppression-reason": "error",
+  },
+}

@@ -12,6 +12,7 @@
     "preview": "vite preview",
     "prepare": "svelte-kit sync",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json && tsc --project tsconfig.scripts.json",
+    "analyze": "fallow --fail-on-issues",
     "lint": "oxlint",
     "fmt": "oxfmt",
     "generate:resume-pdf": "bun scripts/generate-resume-pdf.ts",
@@ -21,6 +22,7 @@
     "@lucide/svelte": "^1.47.0",
     "canvas-confetti": "^1.9.4",
     "simple-icons": "^16.32.0",
+    "ssh2": "^1.17.0",
     "zod": "^4.6.5"
   },
   "devDependencies": {
@@ -31,15 +33,15 @@
     "@types/node": "^26.6.1",
     "@types/pdfkit": "^0.17.6",
     "@types/ssh2": "^1.15.6",
+    "fallow": "^3.28.0",
     "oxfmt": "^0.68.0",
     "oxlint": "^1.83.0",
     "oxlint-tsgolint": "^7.0.2002",
     "pdfkit": "^0.20.2",
     "sharp": "^0.35.4",
-    "ssh2": "^1.17.0",
     "svelte": "^5.57.0",
     "svelte-check": "^4.7.6",
-    "typescript": "~6.0.2",
+    "typescript": "^6.0.2",
     "vite": "^8.3.0"
   },
   "engines": {
