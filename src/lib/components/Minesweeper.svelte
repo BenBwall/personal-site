@@ -29,6 +29,7 @@
   const SAVE_INTERVAL_MS = 10_000;
   const LARGE_BOARD_WARNING_CELLS = 2500;
   const CONFETTI_BURST_INTERVAL_MS = 1700;
+  const CONFETTI_BURST_COUNT = 3;
   const DRAG_START_DISTANCE_PX = 5;
   const COLUMN_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   const DIFFICULTIES = [
@@ -163,9 +164,16 @@
       // A failed read starts a fresh game without blocking the page.
     }
     storageReady = true;
-    if (game.phase === 'won' && !menuOpen) {
+    if (game.phase === 'won' && !menuOpen && !document.hidden) {
       void celebrateWin();
     }
+
+    const stopHiddenConfetti = () => {
+      if (document.hidden) {
+        stopConfetti();
+      }
+    };
+    const unsubscribeHiddenConfetti = on(document, 'visibilitychange', stopHiddenConfetti);
 
     const motionObserver = new MutationObserver(() => {
       if (document.documentElement.dataset.reducedMotion === 'true') {
@@ -193,6 +201,7 @@
     return () => {
       window.clearInterval(interval);
       unsubscribePagehide();
+      unsubscribeHiddenConfetti();
       motionObserver.disconnect();
       stopConfetti();
       saveBeforeLeaving();
@@ -210,17 +219,17 @@
   const celebrateWin = async () => {
     stopConfetti();
     const run = confettiRun;
-    if (document.documentElement.dataset.reducedMotion === 'true') {
+    if (document.hidden || document.documentElement.dataset.reducedMotion === 'true') {
       return;
     }
     try {
       const { default: confettiLibrary } = await import('canvas-confetti');
-      if (run !== confettiRun || game.phase !== 'won' || menuOpen) {
+      if (run !== confettiRun || game.phase !== 'won' || menuOpen || document.hidden) {
         return;
       }
       const confetti = confettiLibrary.create(undefined, { resize: true, useWorker: false });
       activeConfetti = confetti;
-      let firstBurst = true;
+      let burstsLaunched = 0;
       const launch = () => {
         if (run !== confettiRun) {
           return;
@@ -228,6 +237,7 @@
         if (
           game.phase !== 'won' ||
           menuOpen ||
+          document.hidden ||
           document.documentElement.dataset.reducedMotion === 'true'
         ) {
           stopConfetti();
@@ -236,11 +246,15 @@
         void confetti({
           disableForReducedMotion: document.documentElement.dataset.reducedMotion !== 'false',
           origin: { y: 0.65 },
-          particleCount: firstBurst ? 160 : 60,
+          particleCount: burstsLaunched === 0 ? 160 : 60,
           spread: 100,
           startVelocity: 50,
         });
-        firstBurst = false;
+        burstsLaunched += 1;
+        if (burstsLaunched === CONFETTI_BURST_COUNT) {
+          window.clearInterval(confettiInterval);
+          confettiInterval = undefined;
+        }
       };
       confettiInterval = window.setInterval(launch, CONFETTI_BURST_INTERVAL_MS);
       launch();
