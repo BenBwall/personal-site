@@ -3,10 +3,12 @@
   import IntegerInput from '$inputs/IntegerInput.svelte';
   import Details from '$lib/components/Details.svelte';
   import { Heading } from '$lib/components/typography';
+  import { type FlagCheck, checkFlags } from '$lib/minesweeper/check-flags';
   import {
     type HintConstraint,
     type PlayableHint,
     findPlayableHints,
+    hintProofSteps,
   } from '$lib/minesweeper/constraint-solving/generate-hints';
   import {
     BOARD_SIZES,
@@ -52,6 +54,7 @@
   ] as const;
   type BoardSize = (typeof BOARD_SIZE_PRESETS)[number]['id'];
   type HintRole =
+    | 'wrong-flag'
     | 'target-mine'
     | 'target-safe'
     | 'clue'
@@ -65,8 +68,10 @@
     'target-mine': 'Mine to flag',
     'target-safe': 'Safe square to reveal',
     undecided: 'Other undecided square',
+    'wrong-flag': 'Incorrect flag',
   };
   const HINT_ROLE_ORDER: readonly HintRole[] = [
+    'wrong-flag',
     'target-mine',
     'target-safe',
     'clue',
@@ -115,11 +120,16 @@
   let hints = $state<PlayableHint[] | null>(null);
   let hintCursor = $state(0);
   let showHintDetails = $state(false);
+  let flagCheck = $state<FlagCheck | null>(null);
+  let selectedFlagIndex = $state<number | null>(null);
 
   const minesLeft = $derived(game.config.mines - game.flagsCount);
   const gameEnded = $derived(game.phase === 'won' || game.phase === 'lost');
   const showResultMessage = $derived(gameEnded && !resultDismissed);
   const activeHint = $derived(hints?.[hintCursor] ?? null);
+  const selectedFlagHint = $derived(
+    flagCheck?.wrongFlags.find((flag) => flag.index === selectedFlagIndex)?.hint ?? null,
+  );
   const hintDetailsLabel = $derived(
     showHintDetails ? 'Hide supporting cells' : 'Show supporting cells',
   );
@@ -144,6 +154,17 @@
         roles.set(index, 'clue');
       }
       roles.set(activeHint.index, activeHint.kind === 'mine' ? 'target-mine' : 'target-safe');
+    }
+    if (selectedFlagHint) {
+      for (const step of hintProofSteps(selectedFlagHint)) {
+        for (const index of step.references.clueIndices) {
+          roles.set(index, 'clue');
+        }
+        roles.set(step.index, step.kind === 'mine' ? 'proven-mine' : 'proven-safe');
+      }
+    }
+    for (const flag of flagCheck?.wrongFlags ?? []) {
+      roles.set(flag.index, 'wrong-flag');
     }
     return roles;
   });
@@ -349,6 +370,8 @@
     hints = null;
     hintCursor = 0;
     showHintDetails = false;
+    flagCheck = null;
+    selectedFlagIndex = null;
   };
 
   const scrollToCell = (index: number | undefined) => {
@@ -376,6 +399,13 @@
     hintCursor = 0;
     showHintDetails = false;
     scrollToCell(hints[0]?.index);
+  };
+
+  const checkPlacedFlags = () => {
+    clearHints();
+    flagCheck = checkFlags(game);
+    selectedFlagIndex = flagCheck?.wrongFlags[0]?.index ?? null;
+    scrollToCell(flagCheck?.wrongFlags[0]?.index);
   };
 
   const nextHint = () => {
@@ -802,7 +832,11 @@
         title={hintRole
           ? `${coordinateLabel(index, game.config)} · ${HINT_ROLE_LABELS[hintRole]}`
           : undefined}
-        aria-describedby={activeHint?.index === index ? 'current-game-hint' : undefined}
+        aria-describedby={hintRole === 'wrong-flag'
+          ? `flag-explanation-${index}`
+          : activeHint?.index === index
+            ? 'current-game-hint'
+            : undefined}
         disabled={menuOpen ||
           game.phase === 'won' ||
           game.phase === 'lost' ||
@@ -815,6 +849,9 @@
         }}
       >
         <span aria-hidden="true">{cellContent(cell, game)}</span>
+        {#if hintRole === 'wrong-flag'}
+          <span class="wrong-flag-mark" aria-hidden="true">×</span>
+        {/if}
       </button>
     {/each}
   </div>
@@ -928,7 +965,84 @@
 
   {#if storageReady && !menuOpen && game.phase === 'playing'}
     <div class="hint-area">
-      <button type="button" class="action" onclick={showHints}>Hint</button>
+      <div class="hint-toolbar">
+        <button type="button" class="action" onclick={showHints}>Hint</button>
+        <button type="button" class="action" onclick={checkPlacedFlags}>Check flags</button>
+      </div>
+      {#if flagCheck !== null}
+        <div class="hint-card">
+          <p class="hint-heading" role="status">
+            {#if flagCheck.flagsCount === 0}
+              No flags placed yet.
+            {:else if flagCheck.wrongFlags.length === 0}
+              {flagCheck.flagsCount === 1
+                ? 'Your flag is'
+                : `All ${flagCheck.flagsCount} flags are`}
+              correct.
+            {:else if flagCheck.flagsCount === 1}
+              Your flag is incorrect.
+            {:else}
+              {flagCheck.wrongFlags.length} of your {countLabel(flagCheck.flagsCount, 'flag')}
+              {flagCheck.wrongFlags.length === 1 ? 'is' : 'are'} incorrect.
+            {/if}
+          </p>
+          {#if flagCheck.wrongFlags.length > 0}
+            {#if flagCheck.wrongFlags.length > 1}
+              <p class="hint-explanation">
+                Select a flag's coordinate to highlight its supporting clues.
+              </p>
+            {/if}
+            <ul class="flag-check-list">
+              {#each flagCheck.wrongFlags as flag (flag.index)}
+                <li>
+                  <button
+                    type="button"
+                    class="flag-location"
+                    onclick={() => {
+                      selectedFlagIndex = flag.index;
+                      scrollToCell(flag.index);
+                    }}
+                    aria-pressed={selectedFlagIndex === flag.index}
+                    aria-label={`Locate incorrect flag at ${positionLabel(flag.index, game.config)}`}
+                  >
+                    {@render hintCoordinate(flag.index, 'wrong-flag')}
+                  </button>
+                  <div class="hint-explanation" id={`flag-explanation-${flag.index}`}>
+                    {#if flag.hint}
+                      {@const steps = hintProofSteps(flag.hint)}
+                      {#if steps.length > 1}
+                        <ol class="flag-proof">
+                          {#each steps as step (step.index)}
+                            <li>{@render hintExplanation(step)}</li>
+                          {/each}
+                        </ol>
+                      {:else}
+                        <p>{@render hintExplanation(flag.hint)}</p>
+                      {/if}
+                    {:else}
+                      <p>
+                        The board check confirms there is no mine here. No explanation from the
+                        revealed clues is available yet.
+                      </p>
+                    {/if}
+                  </div>
+                </li>
+              {/each}
+            </ul>
+            <div class="hint-legend" aria-label="Highlighted cells">
+              {#each activeHintLegend as { role, label, count } (role)}
+                <span class="hint-legend-item">
+                  <span class="hint-swatch" data-hint-role={role} aria-hidden="true"></span>
+                  {label}{count > 1 ? ` (${count})` : ''}
+                </span>
+              {/each}
+            </div>
+          {/if}
+          <div class="hint-actions">
+            <button type="button" class="action hint-secondary" onclick={clearHints}>Hide</button>
+          </div>
+        </div>
+      {/if}
       {#if hints !== null}
         <div class="hint-card">
           <div aria-live="polite">
@@ -1259,6 +1373,46 @@
     overflow-wrap: anywhere;
   }
 
+  .hint-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .flag-check-list {
+    display: grid;
+    gap: 0.875rem;
+    max-height: 20rem;
+    overflow-y: auto;
+    margin: 0.75rem 0 0;
+    padding-left: 1.25rem;
+  }
+
+  .flag-location {
+    padding: 0;
+    border: 0;
+    border-radius: 0.35rem;
+    background: transparent;
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .flag-location[aria-pressed='true'] {
+    outline: 2px solid light-dark(var(--color-600), var(--color-300));
+    outline-offset: 2px;
+  }
+
+  .flag-proof {
+    display: grid;
+    gap: 0.5rem;
+    margin: 0;
+    padding-left: 1.25rem;
+  }
+
+  .flag-check-list .hint-explanation p {
+    margin: 0;
+  }
+
   .hint-count {
     margin: 0 0 0.25rem;
     color: light-dark(var(--color-700), var(--color-300));
@@ -1478,6 +1632,7 @@
   }
 
   .cell {
+    position: relative;
     display: grid;
     place-items: center;
     min-width: 0;
@@ -1499,7 +1654,8 @@
   }
 
   .cell:focus-visible,
-  .action:focus-visible {
+  .action:focus-visible,
+  .flag-location:focus-visible {
     outline: 2px solid light-dark(var(--color-600), var(--color-300));
     outline-offset: 2px;
     z-index: 1;
@@ -1536,6 +1692,22 @@
   :where(.cell, .hint-coordinate, .hint-swatch)[data-hint-role='target-mine'] {
     --hint-stroke: light-dark(oklch(0.47 0.18 25), oklch(0.8 0.14 25));
     --hint-fill: light-dark(oklch(0.94 0.035 25), oklch(0.31 0.055 25));
+  }
+
+  :where(.cell, .hint-coordinate, .hint-swatch)[data-hint-role='wrong-flag'] {
+    --hint-stroke: light-dark(oklch(0.47 0.18 25), oklch(0.8 0.14 25));
+    --hint-fill: light-dark(oklch(0.94 0.035 25), oklch(0.31 0.055 25));
+  }
+
+  .cell[data-hint-role='wrong-flag'] {
+    color: var(--hint-stroke);
+  }
+
+  .wrong-flag-mark {
+    position: absolute;
+    top: 0.1rem;
+    right: 0.15rem;
+    font-size: 0.75rem;
   }
 
   :where(.cell, .hint-coordinate, .hint-swatch)[data-hint-role='target-safe'] {
