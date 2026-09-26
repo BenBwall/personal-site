@@ -459,6 +459,145 @@
   };
 </script>
 
+{#snippet board()}
+  <div
+    class="board"
+    class:won={game.phase === 'won'}
+    role="group"
+    aria-label={`Minesweeper board, ${game.config.rows} rows and ${game.config.columns} columns${game.phase === 'won' ? ', won' : ''}`}
+    style:grid-template-columns={`minmax(2rem, max-content) repeat(${game.config.columns}, minmax(0, 1fr))`}
+    style:min-width={`${minBoardWidthPx}px`}
+  >
+    <span class="board-corner" aria-hidden="true">{game.phase === 'won' ? '✓' : ''}</span>
+    {#each Array.from({ length: game.config.columns }, (_, index) => index) as column (column)}
+      <span class="board-coordinate column-coordinate" aria-hidden="true">
+        {columnLabel(column)}
+      </span>
+    {/each}
+    {#each game.cells as cell, index (index)}
+      {#if index % game.config.columns === 0}
+        <span class="board-coordinate row-coordinate" aria-hidden="true">
+          {Math.floor(index / game.config.columns) + 1}
+        </span>
+      {/if}
+      <button
+        type="button"
+        class="cell"
+        class:revealed={cell.revealed || (game.phase === 'lost' && cell.mine)}
+        class:flagged={cell.flagged}
+        class:mine={game.phase === 'lost' && cell.mine}
+        class:detonated={game.detonatedIndex === index}
+        class:incorrect={game.phase === 'lost' && cell.flagged && !cell.mine}
+        data-adjacent={cell.revealed && !cell.mine ? cell.adjacent : undefined}
+        aria-label={cellLabel(cell, index, game)}
+        disabled={menuOpen ||
+          game.phase === 'won' ||
+          game.phase === 'lost' ||
+          (cell.revealed && cell.adjacent === 0)}
+        onclick={() => reveal(index)}
+        oncontextmenu={(event) => {
+          event.preventDefault();
+          game = toggleFlag(game, index);
+        }}
+      >
+        <span aria-hidden="true">{cellContent(cell, game)}</span>
+      </button>
+    {/each}
+  </div>
+{/snippet}
+
+{#snippet setupMenu()}
+  <div class="menu-panel" role="group" aria-labelledby="difficulty-title">
+    <h3 id="difficulty-title">Choose difficulty</h3>
+    <form class="setup-form" onsubmit={applyGameSetup}>
+      <fieldset class="option-group">
+        <legend>Board size</legend>
+        <div class="option-buttons">
+          {#each BOARD_SIZE_PRESETS as option (option.id)}
+            <button
+              type="button"
+              class="action"
+              class:active={selectedBoardSize === option.id}
+              aria-pressed={selectedBoardSize === option.id}
+              onclick={() => selectBoardSize(option.id)}
+            >
+              {option.label} <span class="option-size">{option.rows} × {option.columns}</span>
+            </button>
+          {/each}
+        </div>
+      </fieldset>
+      <fieldset class="option-group">
+        <legend>Difficulty</legend>
+        <div class="option-buttons">
+          {#each DIFFICULTIES as option (option.id)}
+            <button
+              type="button"
+              class="action"
+              class:active={difficulty === option.id}
+              aria-pressed={difficulty === option.id}
+              onclick={() => selectDifficulty(option.id)}
+            >
+              {option.label}
+            </button>
+          {/each}
+        </div>
+      </fieldset>
+      {#key inputRevision}
+        <div class="setup-inputs">
+          <IntegerInput
+            label="Rows"
+            min={MIN_BOARD_SIZE}
+            preserveInvalidDraft
+            showValidationError
+            required
+            bind:value={setupRows}
+            onValueChange={(value) => {
+              setupRows = value;
+              updateMinesForSize(value, setupColumns);
+              updatePreview();
+            }}
+          />
+          <IntegerInput
+            label="Columns"
+            min={MIN_BOARD_SIZE}
+            preserveInvalidDraft
+            showValidationError
+            required
+            bind:value={setupColumns}
+            onValueChange={(value) => {
+              setupColumns = value;
+              updateMinesForSize(setupRows, value);
+              updatePreview();
+            }}
+          />
+          <IntegerInput
+            label="Mines"
+            min={1}
+            max={mineLimit}
+            title={`1–${mineLimit} mines`}
+            preserveInvalidDraft
+            showValidationError
+            required
+            bind:value={setupMines}
+            onValueChange={(value) => {
+              setupMines = value;
+              difficulty = null;
+              updatePreview();
+            }}
+          />
+        </div>
+      {/key}
+      {#if setupCellCount > LARGE_BOARD_WARNING_CELLS}
+        <p class="size-warning" role="status">
+          Large board: {setupCellCount.toLocaleString()} squares. It may take longer to load and respond
+          to moves.
+        </p>
+      {/if}
+      <button type="submit" class="action start-game">Start game</button>
+    </form>
+  </div>
+{/snippet}
+
 <section class="game" aria-labelledby="games-title" style:max-width={`${gameWidthRem}rem`}>
   <div class="game-heading">
     <Heading level={2} id="games-title">Games</Heading>
@@ -501,50 +640,7 @@
         boardScrollTop = event.currentTarget.scrollTop;
       }}
     >
-      <div
-        class="board"
-        class:won={game.phase === 'won'}
-        role="group"
-        aria-label={`Minesweeper board, ${game.config.rows} rows and ${game.config.columns} columns${game.phase === 'won' ? ', won' : ''}`}
-        style:grid-template-columns={`minmax(2rem, max-content) repeat(${game.config.columns}, minmax(0, 1fr))`}
-        style:min-width={`${minBoardWidthPx}px`}
-      >
-        <span class="board-corner" aria-hidden="true">{game.phase === 'won' ? '✓' : ''}</span>
-        {#each Array.from({ length: game.config.columns }, (_, index) => index) as column (column)}
-          <span class="board-coordinate column-coordinate" aria-hidden="true">
-            {columnLabel(column)}
-          </span>
-        {/each}
-        {#each game.cells as cell, index (index)}
-          {#if index % game.config.columns === 0}
-            <span class="board-coordinate row-coordinate" aria-hidden="true">
-              {Math.floor(index / game.config.columns) + 1}
-            </span>
-          {/if}
-          <button
-            type="button"
-            class="cell"
-            class:revealed={cell.revealed || (game.phase === 'lost' && cell.mine)}
-            class:flagged={cell.flagged}
-            class:mine={game.phase === 'lost' && cell.mine}
-            class:detonated={game.detonatedIndex === index}
-            class:incorrect={game.phase === 'lost' && cell.flagged && !cell.mine}
-            data-adjacent={cell.revealed && !cell.mine ? cell.adjacent : undefined}
-            aria-label={cellLabel(cell, index, game)}
-            disabled={menuOpen ||
-              game.phase === 'won' ||
-              game.phase === 'lost' ||
-              (cell.revealed && cell.adjacent === 0)}
-            onclick={() => reveal(index)}
-            oncontextmenu={(event) => {
-              event.preventDefault();
-              game = toggleFlag(game, index);
-            }}
-          >
-            <span aria-hidden="true">{cellContent(cell, game)}</span>
-          </button>
-        {/each}
-      </div>
+      {@render board()}
     </div>
     {#if !storageReady}
       <div class="loading-overlay">
@@ -552,95 +648,7 @@
       </div>
     {:else if menuOpen}
       <div class="menu-overlay">
-        <div class="menu-panel" role="group" aria-labelledby="difficulty-title">
-          <h3 id="difficulty-title">Choose difficulty</h3>
-          <form class="setup-form" onsubmit={applyGameSetup}>
-            <fieldset class="option-group">
-              <legend>Board size</legend>
-              <div class="option-buttons">
-                {#each BOARD_SIZE_PRESETS as option (option.id)}
-                  <button
-                    type="button"
-                    class="action"
-                    class:active={selectedBoardSize === option.id}
-                    aria-pressed={selectedBoardSize === option.id}
-                    onclick={() => selectBoardSize(option.id)}
-                  >
-                    {option.label} <span class="option-size">{option.rows} × {option.columns}</span>
-                  </button>
-                {/each}
-              </div>
-            </fieldset>
-            <fieldset class="option-group">
-              <legend>Difficulty</legend>
-              <div class="option-buttons">
-                {#each DIFFICULTIES as option (option.id)}
-                  <button
-                    type="button"
-                    class="action"
-                    class:active={difficulty === option.id}
-                    aria-pressed={difficulty === option.id}
-                    onclick={() => selectDifficulty(option.id)}
-                  >
-                    {option.label}
-                  </button>
-                {/each}
-              </div>
-            </fieldset>
-            {#key inputRevision}
-              <div class="setup-inputs">
-                <IntegerInput
-                  label="Rows"
-                  min={MIN_BOARD_SIZE}
-                  preserveInvalidDraft
-                  showValidationError
-                  required
-                  bind:value={setupRows}
-                  onValueChange={(value) => {
-                    setupRows = value;
-                    updateMinesForSize(value, setupColumns);
-                    updatePreview();
-                  }}
-                />
-                <IntegerInput
-                  label="Columns"
-                  min={MIN_BOARD_SIZE}
-                  preserveInvalidDraft
-                  showValidationError
-                  required
-                  bind:value={setupColumns}
-                  onValueChange={(value) => {
-                    setupColumns = value;
-                    updateMinesForSize(setupRows, value);
-                    updatePreview();
-                  }}
-                />
-                <IntegerInput
-                  label="Mines"
-                  min={1}
-                  max={mineLimit}
-                  title={`1–${mineLimit} mines`}
-                  preserveInvalidDraft
-                  showValidationError
-                  required
-                  bind:value={setupMines}
-                  onValueChange={(value) => {
-                    setupMines = value;
-                    difficulty = null;
-                    updatePreview();
-                  }}
-                />
-              </div>
-            {/key}
-            {#if setupCellCount > LARGE_BOARD_WARNING_CELLS}
-              <p class="size-warning" role="status">
-                Large board: {setupCellCount.toLocaleString()} squares. It may take longer to load and
-                respond to moves.
-              </p>
-            {/if}
-            <button type="submit" class="action start-game">Start game</button>
-          </form>
-        </div>
+        {@render setupMenu()}
       </div>
     {:else if showResultMessage}
       <div class="end-overlay">
