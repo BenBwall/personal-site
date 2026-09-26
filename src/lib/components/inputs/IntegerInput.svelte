@@ -1,5 +1,6 @@
 <script lang="ts">
   import InputField from '$inputs/InputField.svelte';
+  import { z } from '$lib/validation';
   import type { HTMLInputAttributes } from 'svelte/elements';
 
   // Validates non-negative integers; invalid drafts never update the bound value.
@@ -34,6 +35,13 @@
   let inputElement: HTMLInputElement | undefined;
   let error = $state('');
 
+  const valueSchema = $derived(
+    z
+      .int({ error: 'Enter a whole number.' })
+      .min(min, { error: `Enter a number from ${min} to ${max}.` })
+      .max(max, { error: maxErrorMessage ?? `Enter a number from ${min} to ${max}.` }),
+  );
+
   const update = (input: HTMLInputElement) => {
     if (input.validity.valueMissing) {
       error = `${label} is required.`;
@@ -44,22 +52,14 @@
       return;
     }
 
-    const next = Number(input.value);
-    if (!Number.isSafeInteger(next)) {
-      error = 'Enter a whole number.';
-      return;
-    }
-    if (next < min) {
-      error = `Enter a number from ${min} to ${max}.`;
-      return;
-    }
-    if (next > max) {
-      error = maxErrorMessage ?? `Enter a number from ${min} to ${max}.`;
+    const result = valueSchema.safeParse(Number(input.value));
+    if (!result.success) {
+      error = result.error.issues[0].message;
       return;
     }
 
     error = '';
-    value = next;
+    value = result.data;
     onValueChange?.(value);
   };
 
@@ -67,8 +67,7 @@
     if (!inputElement) {
       return;
     }
-    const draft = Number(inputElement.value);
-    if (error || draft < min || draft > max) {
+    if (error || !valueSchema.safeParse(Number(inputElement.value)).success) {
       update(inputElement);
     }
   });

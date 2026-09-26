@@ -1,13 +1,13 @@
 import adapter from '@sveltejs/adapter-static';
 import type { Config } from '@sveltejs/kit';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+import { z } from 'zod';
 
 import { minifyStaticJs } from '#scripts/minify-static-js.ts';
 
-const isBasePath = (value: string): value is '' | `/${string}` =>
-  value === '' || value.startsWith('/');
-const basePath = process.env.BASE_PATH ?? '';
-if (!isBasePath(basePath)) {
+const basePathSchema = z.union([z.literal(''), z.templateLiteral(['/', z.string()])]);
+const basePath = basePathSchema.safeParse(process.env.BASE_PATH ?? '');
+if (!basePath.success) {
   throw new Error('BASE_PATH must begin with a slash.');
 }
 
@@ -36,7 +36,7 @@ const config: Config = {
       mode: 'hash',
     },
     paths: {
-      base: basePath,
+      base: basePath.data,
     },
   },
   preprocess: vitePreprocess(),
