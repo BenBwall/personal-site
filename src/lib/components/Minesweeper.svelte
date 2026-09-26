@@ -1,4 +1,5 @@
 <script lang="ts">
+  import CheckboxInput from '$inputs/CheckboxInput.svelte';
   import IntegerInput from '$inputs/IntegerInput.svelte';
   import { Heading } from '$lib/components/typography';
   import {
@@ -8,8 +9,9 @@
     type Game,
     type GameConfig,
     MIN_BOARD_SIZE,
+    boardSizeSchema,
     createGame,
-    isValidConfig,
+    gameConfigSchema,
     maxMineCount,
     minesForDifficulty,
     revealAdjacentCells,
@@ -53,6 +55,8 @@
   let setupMines = $state<number>(
     minesForDifficulty('easy', BOARD_SIZES.small.rows, BOARD_SIZES.small.columns),
   );
+  let setupNoGuessingRequired = $state(true);
+  let generationError = $state<string | null>(null);
   let inputRevision = $state(0);
   let elapsedSeconds = $state(0);
   let storageReady = $state(false);
@@ -89,7 +93,7 @@
   );
   const setupCellCount = $derived(setupRows * setupColumns);
   const mineLimit = $derived(
-    Number.isInteger(setupRows) && Number.isInteger(setupColumns)
+    boardSizeSchema.safeParse({ columns: setupColumns, rows: setupRows }).success
       ? maxMineCount(setupRows, setupColumns)
       : 1,
   );
@@ -102,8 +106,15 @@
       ? Math.floor((Date.now() - startedAt) / MILLISECONDS_PER_SECOND)
       : elapsedSeconds;
 
+  const setupConfig = (): GameConfig => ({
+    columns: setupColumns,
+    mines: setupMines,
+    noGuessingRequired: setupNoGuessingRequired,
+    rows: setupRows,
+  });
+
   const currentSavedState = (seconds: number): SavedGameState => {
-    const setup = { columns: setupColumns, mines: setupMines, rows: setupRows };
+    const setup = setupConfig();
     return {
       difficulty,
       elapsedSeconds: seconds,
@@ -111,7 +122,7 @@
       menuOpen,
       scrollLeft: boardScrollLeft,
       scrollTop: boardScrollTop,
-      setup: isValidConfig(setup) ? setup : game.config,
+      setup: gameConfigSchema.safeParse(setup).success ? setup : game.config,
     };
   };
 
@@ -149,6 +160,7 @@
         setupRows = saved.setup.rows;
         setupColumns = saved.setup.columns;
         setupMines = saved.setup.mines;
+        setupNoGuessingRequired = saved.setup.noGuessingRequired;
         elapsedSeconds = saved.elapsedSeconds;
         boardScrollLeft = saved.scrollLeft;
         boardScrollTop = saved.scrollTop;
@@ -267,9 +279,16 @@
   };
 
   const reveal = (index: number) => {
-    const next = game.cells[index].revealed
-      ? revealAdjacentCells(game, index)
-      : revealCell(game, index);
+    let next: Game;
+    try {
+      next = game.cells[index].revealed
+        ? revealAdjacentCells(game, index)
+        : revealCell(game, index);
+    } catch (error) {
+      generationError = error instanceof Error ? error.message : 'Could not create this board.';
+      return;
+    }
+    generationError = null;
     const justWon = game.phase !== 'won' && next.phase === 'won';
     if (game.phase === 'ready' && next.phase !== 'ready') {
       startedAt = Date.now();
@@ -343,6 +362,7 @@
 
   const startNewGame = (config: GameConfig) => {
     stopConfetti();
+    generationError = null;
     boardScrollElement?.scrollTo(0, 0);
     boardScrollLeft = 0;
     boardScrollTop = 0;
@@ -355,6 +375,7 @@
 
   const openMenu = () => {
     stopConfetti();
+    generationError = null;
     boardScrollElement?.scrollTo(0, 0);
     boardScrollLeft = 0;
     boardScrollTop = 0;
@@ -366,8 +387,8 @@
   };
 
   const updatePreview = () => {
-    const config = { columns: setupColumns, mines: setupMines, rows: setupRows };
-    if (isValidConfig(config) && setupCellCount <= LARGE_BOARD_WARNING_CELLS) {
+    const config = setupConfig();
+    if (gameConfigSchema.safeParse(config).success && setupCellCount <= LARGE_BOARD_WARNING_CELLS) {
       game = createGame(config);
     }
   };
@@ -402,8 +423,8 @@
     ) {
       return;
     }
-    const config = { columns: setupColumns, mines: setupMines, rows: setupRows };
-    if (!isValidConfig(config)) {
+    const config = setupConfig();
+    if (!gameConfigSchema.safeParse(config).success) {
       return;
     }
     startNewGame(config);
@@ -587,6 +608,7 @@
           />
         </div>
       {/key}
+      <CheckboxInput label="Solvable without guessing" bind:checked={setupNoGuessingRequired} />
       {#if setupCellCount > LARGE_BOARD_WARNING_CELLS}
         <p class="size-warning" role="status">
           Large board: {setupCellCount.toLocaleString()} squares. It may take longer to load and respond
@@ -610,6 +632,10 @@
     {/if}
     <span><strong>{elapsedSeconds}</strong> seconds</span>
   </div>
+
+  {#if generationError}
+    <p class="generation-error" role="alert">{generationError}</p>
+  {/if}
 
   <div class="board-stage">
     <div
@@ -846,6 +872,12 @@
     color: light-dark(var(--color-offset-120-700), var(--color-offset-120-300));
     font-size: 0.8125rem;
     line-height: 1.4;
+  }
+
+  .generation-error {
+    margin: 0 0 0.75rem;
+    color: light-dark(var(--color-offset-120-700), var(--color-offset-120-300));
+    font-size: 0.875rem;
   }
 
   .scoreboard {

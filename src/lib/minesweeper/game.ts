@@ -1,15 +1,34 @@
-import { validateIsSolveable } from "./validate-solveable";
-
-export type GameConfig = {
-  columns: number;
-  mines: number;
-  rows: number;
-  isDefinitelySolveable: boolean;
-};
+import { placeMines } from '$lib/minesweeper/constraint-solving/find-solvable-games';
+import { neighborsOf } from '$lib/minesweeper/neighbors';
+import { z } from '$lib/validation';
 
 export const MIN_BOARD_SIZE = 5;
 
 export const maxMineCount = (rows: number, columns: number): number => rows * columns - 9;
+
+/** Validate board dimensions and ensure the total cell count is a safe integer. */
+export const boardSizeSchema = z
+  .object({
+    columns: z.int().min(MIN_BOARD_SIZE),
+    rows: z.int().min(MIN_BOARD_SIZE),
+  })
+  .refine(({ columns, rows }) => rows * columns <= Number.MAX_SAFE_INTEGER, {
+    message: 'The board must contain a safe integer number of cells.',
+    path: ['rows'],
+  });
+
+/** Validate the mine count while reserving a safe opening around the first click. */
+export const gameConfigSchema = boardSizeSchema
+  .safeExtend({
+    mines: z.int().min(1),
+    noGuessingRequired: z.boolean(),
+  })
+  .refine(({ columns, mines, rows }) => mines <= maxMineCount(rows, columns), {
+    message: 'Leave enough safe cells for the first click and its neighbors.',
+    path: ['mines'],
+  });
+
+export type GameConfig = z.infer<typeof gameConfigSchema>;
 
 export const BOARD_SIZES = {
   large: { columns: 16, rows: 16 },
@@ -17,7 +36,7 @@ export const BOARD_SIZES = {
   small: { columns: 8, rows: 8 },
 } as const;
 
-export const MINE_DENSITIES = {
+const MINE_DENSITIES = {
   easy: 0.15,
   hard: 0.25,
   medium: 0.2,
@@ -31,21 +50,11 @@ export const minesForDifficulty = (difficulty: Difficulty, rows: number, columns
     Math.max(1, Math.round(rows * columns * MINE_DENSITIES[difficulty])),
   );
 
-export const defaultConfig: () => GameConfig = () => ({
+const defaultConfig: () => GameConfig = () => ({
   ...BOARD_SIZES.small,
   mines: minesForDifficulty('easy', BOARD_SIZES.small.rows, BOARD_SIZES.small.columns),
-  isDefinitelySolveable: true,
+  noGuessingRequired: true,
 });
-
-export const isValidConfig = ({ columns, mines, rows }: GameConfig): boolean =>
-  Number.isSafeInteger(rows) &&
-  rows >= MIN_BOARD_SIZE &&
-  Number.isSafeInteger(columns) &&
-  columns >= MIN_BOARD_SIZE &&
-  Number.isSafeInteger(rows * columns) &&
-  Number.isSafeInteger(mines) &&
-  mines >= 1 &&
-  mines <= maxMineCount(rows, columns);
 
 export type Cell = {
   adjacent: number;
@@ -64,7 +73,7 @@ export type Game = {
 };
 
 export const createGame = (config: GameConfig = defaultConfig()): Game => {
-  if (!isValidConfig(config)) {
+  if (!gameConfigSchema.safeParse(config).success) {
     throw new RangeError('Invalid Minesweeper board configuration.');
   }
 
@@ -81,68 +90,6 @@ export const createGame = (config: GameConfig = defaultConfig()): Game => {
     phase: 'ready',
     revealedCount: 0,
   };
-};
-
-const neighborsOf = (index: number, { columns, rows }: GameConfig): number[] => {
-  const row = Math.floor(index / columns);
-  const column = index % columns;
-  const neighbors: number[] = [];
-
-  for (let rowOffset = -1; rowOffset <= 1; rowOffset += 1) {
-    for (let columnOffset = -1; columnOffset <= 1; columnOffset += 1) {
-      if (rowOffset === 0 && columnOffset === 0) {
-        continue;
-      }
-
-      const nextRow = row + rowOffset;
-      const nextColumn = column + columnOffset;
-      if (nextRow >= 0 && nextRow < rows && nextColumn >= 0 && nextColumn < columns) {
-        neighbors.push(nextRow * columns + nextColumn);
-      }
-    }
-  }
-
-  return neighbors;
-};
-
-const placeMines = (
-  cells: Cell[],
-  safeIndex: number,
-  config: GameConfig,
-  random: () => number,
-): Cell[] => {
-  cells = placeMinesOnce(cells, safeIndex, config, random);
-  if (!config.isDefinitelySolveable) {
-    return cells;
-  }
-
-  while (!validateIsSolveable(cells)) {
-    cells = placeMinesOnce(cells, safeIndex, config, random);
-  }
-
-  return cells;
-};
-
-const placeMinesOnce = (
-  cells: Cell[],
-  safeIndex: number,
-  config: GameConfig,
-  random: () => number,
-): Cell[] => {
-  const safeIndices = new Set([safeIndex, ...neighborsOf(safeIndex, config)]);
-  const candidates = cells.map((_, index) => index).filter((index) => !safeIndices.has(index));
-
-  for (let index = candidates.length - 1; index > 0; index -= 1) {
-    const swapIndex = Math.floor(random() * (index + 1));
-    [candidates[index], candidates[swapIndex]] = [candidates[swapIndex], candidates[index]];
-  }
-
-  const mineIndices = new Set(candidates.slice(0, config.mines));
-  return cells.map((cell, index) => ({
-    ...cell,
-    adjacent: neighborsOf(index, config).filter((neighbor) => mineIndices.has(neighbor)).length,
-    mine: mineIndices.has(index),
-  }));
 };
 
 export const revealCell = (game: Game, index: number, random = Math.random): Game => {

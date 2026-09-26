@@ -3,7 +3,7 @@ import {
   type Difficulty,
   type Game,
   type GameConfig,
-  isValidConfig,
+  gameConfigSchema,
 } from '$lib/minesweeper/game';
 
 export const GAME_STORAGE_KEY = 'personal-site:minesweeper';
@@ -24,16 +24,14 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
 const readConfig = (value: unknown): GameConfig | null => {
-  if (
-    !isRecord(value) ||
-    typeof value.columns !== 'number' ||
-    typeof value.mines !== 'number' ||
-    typeof value.rows !== 'number'
-  ) {
+  if (!isRecord(value)) {
     return null;
   }
-  const config = { columns: value.columns, mines: value.mines, rows: value.rows };
-  return isValidConfig(config) ? config : null;
+  const result = gameConfigSchema.safeParse({
+    ...value,
+    noGuessingRequired: value.noGuessingRequired ?? false,
+  });
+  return result.success ? result.data : null;
 };
 
 const isCell = (value: unknown): value is Cell =>
