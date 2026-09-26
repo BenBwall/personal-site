@@ -23,6 +23,7 @@
     serializeGameState,
   } from '$lib/minesweeper/persistence';
   import { onMount, untrack } from 'svelte';
+  import { on } from 'svelte/events';
 
   const MILLISECONDS_PER_SECOND = 1000;
   const SAVE_INTERVAL_MS = 10_000;
@@ -187,11 +188,11 @@
         }
       }
     }, MILLISECONDS_PER_SECOND);
-    window.addEventListener('pagehide', saveBeforeLeaving);
+    const unsubscribePagehide = on(window, 'pagehide', saveBeforeLeaving);
 
     return () => {
       window.clearInterval(interval);
-      window.removeEventListener('pagehide', saveBeforeLeaving);
+      unsubscribePagehide();
       motionObserver.disconnect();
       stopConfetti();
       saveBeforeLeaving();

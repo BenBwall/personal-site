@@ -1,9 +1,26 @@
 import { RuleTester } from 'oxlint/plugins-dev';
 
-import { noFunctionKeyword } from '#scripts/oxlint-plugin.ts';
+import { noAddEventListener, noFunctionKeyword } from '#scripts/oxlint-plugin.ts';
 
 const tester = new RuleTester({
   languageOptions: { parserOptions: { lang: 'ts' }, sourceType: 'module' },
+});
+
+tester.run('no-add-event-listener', noAddEventListener, {
+  invalid: [
+    'window.addEventListener("pagehide", save);',
+    'document["addEventListener"]("visibilitychange", stop);',
+    'target[`addEventListener`]("click", handle);',
+    'target?.addEventListener?.("click", handle);',
+    'addEventListener("resize", handle);',
+    'const subscribe = target.addEventListener;',
+  ].map((code) => ({ code, errors: [{ messageId: 'useSvelteOn' }], output: null })),
+  valid: [
+    'import { on } from "svelte/events"; on(window, "pagehide", save);',
+    'const addEventListenerLabel = "addEventListener";',
+    'const listener = target[eventMethod];',
+    '// addEventListener is only mentioned in a comment',
+  ],
 });
 
 tester.run('no-function-keyword', noFunctionKeyword, {
