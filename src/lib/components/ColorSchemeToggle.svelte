@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { colorScheme, toggleColorScheme } from '$theme/color-scheme.svelte';
+  import { colorScheme, toggleColorScheme } from '$lib/theme/color-scheme.svelte';
   import { Moon, Sun } from '@lucide/svelte';
 
   const isDark = $derived(colorScheme.current === 'dark');

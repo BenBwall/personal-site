@@ -5,6 +5,7 @@
   import CheckboxInput from '$inputs/CheckboxInput.svelte';
   import InputField from '$inputs/InputField.svelte';
   import RangeInput from '$inputs/RangeInput.svelte';
+  import { preferences, setPreference } from '$lib/theme/preferences.svelte';
   import {
     applyTheme,
     defaultTheme,
@@ -13,7 +14,6 @@
     maxChroma,
     setTheme,
   } from '$lib/theme/theme';
-  import { preferences, setPreference } from '$theme/preferences.svelte';
   import { Palette } from '@lucide/svelte';
   import { onMount } from 'svelte';
 
@@ -59,6 +59,9 @@
     dialog.showModal();
     isOpen = true;
   };
+
+  const channelLabel = (enabled: boolean, value: string): string =>
+    enabled ? (preferences.reducedMotion ? 'Paused' : 'Cycling') : value;
 </script>
 
 <svelte:window onpagehide={saveTheme} />
@@ -100,16 +103,14 @@
         max={1}
         step={0.01}
         bind:value={theme.luminosity}
-        valueLabel={theme.rainbowLuminosityEnabled
-          ? preferences.reducedMotion
-            ? 'Paused'
-            : 'Cycling'
-          : `${Math.round(theme.luminosity * 100)}%`}
-        aria-valuetext={theme.rainbowLuminosityEnabled
-          ? preferences.reducedMotion
-            ? 'Paused'
-            : 'Cycling'
-          : `${Math.round(theme.luminosity * 100)} percent`}
+        valueLabel={channelLabel(
+          theme.rainbowLuminosityEnabled,
+          `${Math.round(theme.luminosity * 100)}%`,
+        )}
+        aria-valuetext={channelLabel(
+          theme.rainbowLuminosityEnabled,
+          `${Math.round(theme.luminosity * 100)} percent`,
+        )}
         disabled={theme.rainbowLuminosityEnabled}
         onValueChange={saveTheme}
       />
@@ -131,16 +132,8 @@
         max={maxChroma}
         step={0.01}
         bind:value={theme.chroma}
-        valueLabel={theme.rainbowChromaEnabled
-          ? preferences.reducedMotion
-            ? 'Paused'
-            : 'Cycling'
-          : theme.chroma.toFixed(2)}
-        aria-valuetext={theme.rainbowChromaEnabled
-          ? preferences.reducedMotion
-            ? 'Paused'
-            : 'Cycling'
-          : theme.chroma.toFixed(2)}
+        valueLabel={channelLabel(theme.rainbowChromaEnabled, theme.chroma.toFixed(2))}
+        aria-valuetext={channelLabel(theme.rainbowChromaEnabled, theme.chroma.toFixed(2))}
         disabled={theme.rainbowChromaEnabled}
         onValueChange={saveTheme}
       />
@@ -162,17 +155,9 @@
         max={fullHueRotation}
         step={1}
         bind:value={theme.hue}
-        valueLabel={theme.rainbowEnabled
-          ? preferences.reducedMotion
-            ? 'Paused'
-            : 'Cycling'
-          : `${theme.hue}°`}
+        valueLabel={channelLabel(theme.rainbowEnabled, `${theme.hue}°`)}
         disabled={theme.rainbowEnabled}
-        aria-valuetext={theme.rainbowEnabled
-          ? preferences.reducedMotion
-            ? 'Paused'
-            : 'Cycling'
-          : `${theme.hue} degrees`}
+        aria-valuetext={channelLabel(theme.rainbowEnabled, `${theme.hue} degrees`)}
         onValueChange={saveTheme}
       />
       <RainbowSettings
