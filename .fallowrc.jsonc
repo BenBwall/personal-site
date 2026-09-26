@@ -20,7 +20,6 @@
   },
   "boundaries": {
     "zones": [
-      { "name": "tests", "patterns": ["tests/**", "scripts/**/*.test.ts"] },
       { "name": "app", "patterns": ["src/**"] },
       { "name": "scripts", "patterns": ["scripts/**"] },
       { "name": "tooling", "patterns": ["*.ts", "*.js", "*.mjs"] },
@@ -28,7 +27,6 @@
     "rules": [
       { "from": "app", "allow": [] },
       { "from": "scripts", "allow": ["app"] },
-      { "from": "tests", "allow": ["app", "scripts"] },
       { "from": "tooling", "allow": ["scripts"] },
     ],
     "coverage": { "requireAllFiles": true },
