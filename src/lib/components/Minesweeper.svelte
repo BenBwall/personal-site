@@ -1,7 +1,13 @@
 <script lang="ts">
   import CheckboxInput from '$inputs/CheckboxInput.svelte';
   import IntegerInput from '$inputs/IntegerInput.svelte';
+  import Details from '$lib/components/Details.svelte';
   import { Heading } from '$lib/components/typography';
+  import {
+    type HintConstraint,
+    type PlayableHint,
+    findPlayableHints,
+  } from '$lib/minesweeper/constraint-solving/generate-hints';
   import {
     BOARD_SIZES,
     type Cell,
@@ -45,6 +51,29 @@
     { id: 'large', label: 'Large', ...BOARD_SIZES.large },
   ] as const;
   type BoardSize = (typeof BOARD_SIZE_PRESETS)[number]['id'];
+  type HintRole =
+    | 'target-mine'
+    | 'target-safe'
+    | 'clue'
+    | 'proven-mine'
+    | 'proven-safe'
+    | 'undecided';
+  const HINT_ROLE_LABELS: Record<HintRole, string> = {
+    clue: 'Clue used',
+    'proven-mine': 'Proven mine',
+    'proven-safe': 'Proven safe square',
+    'target-mine': 'Mine to flag',
+    'target-safe': 'Safe square to reveal',
+    undecided: 'Other undecided square',
+  };
+  const HINT_ROLE_ORDER: readonly HintRole[] = [
+    'target-mine',
+    'target-safe',
+    'clue',
+    'proven-mine',
+    'proven-safe',
+    'undecided',
+  ];
 
   let game = $state(createGame());
   let difficulty = $state<Difficulty | null>('easy');
@@ -83,10 +112,48 @@
     | undefined;
   let isDragging = $state(false);
   let suppressDraggedClick = false;
+  let hints = $state<PlayableHint[] | null>(null);
+  let hintCursor = $state(0);
+  let showHintDetails = $state(false);
 
   const minesLeft = $derived(game.config.mines - game.flagsCount);
   const gameEnded = $derived(game.phase === 'won' || game.phase === 'lost');
   const showResultMessage = $derived(gameEnded && !resultDismissed);
+  const activeHint = $derived(hints?.[hintCursor] ?? null);
+  const hintDetailsLabel = $derived(
+    showHintDetails ? 'Hide supporting cells' : 'Show supporting cells',
+  );
+  const activeHintRoles = $derived.by(() => {
+    const roles = new Map<number, HintRole>();
+    if (activeHint) {
+      const { references } = activeHint;
+      if (showHintDetails) {
+        for (const index of references.undecidedIndices) {
+          roles.set(index, 'undecided');
+        }
+        for (const index of references.provenSafeIndices) {
+          roles.set(index, 'proven-safe');
+        }
+        for (const index of references.provenMineIndices) {
+          roles.set(index, 'proven-mine');
+        }
+      }
+      for (const index of showHintDetails
+        ? references.clueIndices
+        : references.clueIndices.slice(0, 3)) {
+        roles.set(index, 'clue');
+      }
+      roles.set(activeHint.index, activeHint.kind === 'mine' ? 'target-mine' : 'target-safe');
+    }
+    return roles;
+  });
+  const activeHintLegend = $derived(
+    HINT_ROLE_ORDER.map((role) => ({
+      count: [...activeHintRoles.values()].filter((value) => value === role).length,
+      label: HINT_ROLE_LABELS[role],
+      role,
+    })).filter(({ count }) => count > 0),
+  );
   const gameWidthRem = $derived(Math.min(70, game.config.columns * 3.4));
   const minBoardWidthPx = $derived(
     game.config.columns * 32 + Math.max(32, String(game.config.rows).length * 12),
@@ -278,6 +345,55 @@
     }
   };
 
+  const clearHints = () => {
+    hints = null;
+    hintCursor = 0;
+    showHintDetails = false;
+  };
+
+  const scrollToCell = (index: number | undefined) => {
+    if (index === undefined || !boardScrollElement) {
+      return;
+    }
+    const cell = boardScrollElement.querySelector<HTMLButtonElement>(
+      `[data-cell-index="${index}"]`,
+    );
+    if (!cell) {
+      return;
+    }
+    const viewport = boardScrollElement.getBoundingClientRect();
+    const target = cell.getBoundingClientRect();
+    boardScrollElement.scrollBy({
+      behavior: document.documentElement.dataset.reducedMotion === 'true' ? 'auto' : 'smooth',
+      left: target.left + target.width / 2 - viewport.left - viewport.width / 2,
+      top: target.top + target.height / 2 - viewport.top - viewport.height / 2,
+    });
+  };
+
+  const showHints = () => {
+    clearHints();
+    hints = findPlayableHints(game);
+    hintCursor = 0;
+    showHintDetails = false;
+    scrollToCell(hints[0]?.index);
+  };
+
+  const nextHint = () => {
+    if (!hints || hints.length === 0) {
+      return;
+    }
+    hintCursor = (hintCursor + 1) % hints.length;
+    scrollToCell(hints[hintCursor].index);
+  };
+
+  const lastHint = () => {
+    if (!hints || hints.length === 0) {
+      return;
+    }
+    hintCursor = (hintCursor - 1 + hints.length) % hints.length;
+    scrollToCell(hints[hintCursor].index);
+  };
+
   const reveal = (index: number) => {
     let next: Game;
     try {
@@ -289,6 +405,7 @@
       return;
     }
     generationError = null;
+    clearHints();
     const justWon = game.phase !== 'won' && next.phase === 'won';
     if (game.phase === 'ready' && next.phase !== 'ready') {
       startedAt = Date.now();
@@ -300,6 +417,24 @@
     if (next.phase !== 'playing' && startedAt !== null) {
       elapsedSeconds = Math.floor((Date.now() - startedAt) / MILLISECONDS_PER_SECOND);
     }
+  };
+
+  const performHint = (hint: PlayableHint) => {
+    if (game.phase !== 'playing' || game.cells[hint.index].revealed) {
+      return;
+    }
+    if (hint.kind === 'mine') {
+      if (game.cells[hint.index].flagged || game.flagsCount >= game.config.mines) {
+        return;
+      }
+      game = toggleFlag(game, hint.index);
+      clearHints();
+      return;
+    }
+    if (game.cells[hint.index].flagged) {
+      game = toggleFlag(game, hint.index);
+    }
+    reveal(hint.index);
   };
 
   const beginBoardDrag = (event: PointerEvent) => {
@@ -362,6 +497,7 @@
 
   const startNewGame = (config: GameConfig) => {
     stopConfetti();
+    clearHints();
     generationError = null;
     boardScrollElement?.scrollTo(0, 0);
     boardScrollLeft = 0;
@@ -375,6 +511,7 @@
 
   const openMenu = () => {
     stopConfetti();
+    clearHints();
     generationError = null;
     boardScrollElement?.scrollTo(0, 0);
     boardScrollLeft = 0;
@@ -441,8 +578,22 @@
     return label;
   };
 
+  const positionLabel = (index: number, config: GameConfig): string =>
+    `row ${Math.floor(index / config.columns) + 1}, column ${columnLabel(index % config.columns)}`;
+
+  const coordinateLabel = (index: number, config: GameConfig): string =>
+    `${columnLabel(index % config.columns)}${Math.floor(index / config.columns) + 1}`;
+
+  const coordinateList = (indices: readonly number[], config: GameConfig): string => {
+    const coordinates = indices.map((index) => coordinateLabel(index, config));
+    if (coordinates.length < 3) {
+      return coordinates.join(' and ');
+    }
+    return `${coordinates.slice(0, -1).join(', ')}, and ${coordinates.at(-1)}`;
+  };
+
   const cellLabel = (cell: Cell, index: number, currentGame: Game): string => {
-    const position = `Row ${Math.floor(index / currentGame.config.columns) + 1}, column ${columnLabel(index % currentGame.config.columns)}`;
+    const position = positionLabel(index, currentGame.config);
     if (currentGame.phase === 'lost' && cell.mine) {
       return `${position}: mine`;
     }
@@ -478,7 +629,141 @@
     }
     return '';
   };
+
+  const hintAction = (hint: PlayableHint): string => {
+    if (hint.kind === 'mine') {
+      return game.flagsCount === game.config.mines ? 'Make room for a flag, then flag' : 'Flag';
+    }
+    return game.cells[hint.index].flagged ? 'Remove the flag, then reveal' : 'Reveal safely';
+  };
+
+  const countLabel = (count: number, noun: string): string =>
+    `${count} ${noun}${count === 1 ? '' : 's'}`;
 </script>
+
+{#snippet hintCoordinate(index: number, role: HintRole)}
+  <span
+    class="hint-coordinate"
+    data-hint-role={role}
+    aria-label={positionLabel(index, game.config)}
+  >
+    {coordinateLabel(index, game.config)}
+  </span>
+{/snippet}
+
+{#snippet hintCoordinates(indices: readonly number[], role: HintRole)}
+  {#each indices as index, position (index)}
+    {#if position > 0}{position === indices.length - 1 ? ' and ' : ', '}{/if}
+    {@render hintCoordinate(index, role)}
+  {/each}
+{/snippet}
+
+{#snippet constraintFact(clue: HintConstraint)}
+  {@const accounted = game.cells[clue.clueIndex].adjacent - clue.mines}
+  Clue {@render hintCoordinate(clue.clueIndex, 'clue')}
+  {#if accounted > 0}
+    already has {countLabel(accounted, 'mine')} accounted for and
+  {/if}
+  needs {countLabel(clue.mines, 'mine')} among {coordinateList(clue.cells, game.config)}.
+{/snippet}
+
+{#snippet hintExplanation(hint: PlayableHint)}
+  {@const reason = hint.reason}
+  {#if reason.kind === 'satisfied-clue'}
+    {@render hintCoordinate(reason.clueIndex, 'clue')} shows {reason.mineCount}.
+    {@render hintCoordinates(hint.references.provenMineIndices, 'proven-mine')}
+    {reason.mineCount === 1 ? 'already accounts' : 'already account'} for
+    {reason.mineCount === 1 ? 'its only mine' : `all ${reason.mineCount} mines`}. A mine at {@render hintCoordinate(
+      hint.index,
+      'target-safe',
+    )} would make
+    {reason.mineCount + 1} neighboring mines, contradicting that clue.
+    {coordinateLabel(hint.index, game.config)} must be safe.
+  {:else if reason.kind === 'clue'}
+    {@const mineCount = game.cells[reason.clueIndex].adjacent}
+    {@render hintCoordinate(reason.clueIndex, 'clue')} shows {mineCount}.
+    {#if reason.remainingMines === 0}
+      {#if reason.knownMines > 0}
+        {@render hintCoordinates(hint.references.provenMineIndices, 'proven-mine')}
+        {reason.knownMines === 1 ? 'already accounts' : 'already account'} for
+        {mineCount === 1 ? 'its only mine' : `all ${mineCount} mines`}. A mine at {@render hintCoordinate(
+          hint.index,
+          'target-safe',
+        )} would make
+        {mineCount + 1} neighboring mines, contradicting that clue.
+      {:else}
+        None of its neighboring squares can contain a mine, including
+        {@render hintCoordinate(hint.index, 'target-safe')}.
+      {/if}
+      {coordinateLabel(hint.index, game.config)} must be safe.
+    {:else}
+      {#if reason.knownMines > 0}
+        {@render hintCoordinates(hint.references.provenMineIndices, 'proven-mine')}
+        {reason.knownMines === 1 ? 'accounts' : 'account'} for
+        {countLabel(reason.knownMines, 'mine')}.
+      {/if}
+      {#if reason.knownSafe > 0}
+        {@render hintCoordinates(hint.references.provenSafeIndices, 'proven-safe')}
+        {reason.knownSafe === 1 ? 'is' : 'are'} safe.
+      {/if}
+      {#if reason.unknownNeighbors === 1}
+        Its only remaining hidden neighbor is
+        {@render hintCoordinate(hint.index, 'proven-mine')}, so that square must be a mine.
+      {:else}
+        Its remaining {countLabel(reason.remainingMines, 'mine')} must be in
+        {@render hintCoordinates(hint.references.undecidedIndices, 'proven-mine')}. There {reason.unknownNeighbors ===
+        1
+          ? 'is'
+          : 'are'} exactly
+        {countLabel(reason.unknownNeighbors, 'square')}, so each must contain a mine.
+      {/if}
+    {/if}
+  {:else if reason.kind === 'constraints'}
+    {#if reason.proof.kind === 'covered-clue'}
+      {#each reason.proof.groups as group (group.constraint.clueIndex)}
+        {@render constraintFact(group.constraint)}
+        {#if group.outside.length > 0}
+          {#if hint.kind === 'safe'}
+            At least {countLabel(group.bound, 'mine')} must be among
+            {coordinateList(group.shared, game.config)} next to clue
+            {coordinateLabel(reason.proof.anchor.clueIndex, game.config)}.
+          {:else}
+            At most {countLabel(group.bound, 'mine')} can be among
+            {coordinateList(group.shared, game.config)} next to clue
+            {coordinateLabel(reason.proof.anchor.clueIndex, game.config)}.
+          {/if}
+        {/if}<br />
+      {/each}
+      {@render constraintFact(reason.proof.anchor)}<br />
+      {#if hint.kind === 'safe'}
+        This accounts for all {countLabel(reason.proof.anchor.mines, 'mine')} needed by clue {coordinateLabel(
+          reason.proof.anchor.clueIndex,
+          game.config,
+        )}, so
+        {coordinateLabel(hint.index, game.config)} is safe.
+      {:else}
+        This leaves {countLabel(reason.proof.remaining.length, 'square')} that must be mines, including
+        {coordinateLabel(hint.index, game.config)}.
+      {/if}
+    {:else}
+      {#each reason.proof.clues.slice(0, 3) as clue (clue.clueIndex)}
+        {@render constraintFact(clue)}<br />
+      {/each}
+      {#if reason.proof.clues.length > 3}
+        {reason.proof.clues.length - 3} other nearby clues also constrain these squares.<br />
+      {/if}
+      Together, these counts force {coordinateLabel(hint.index, game.config)} to be
+      {hint.kind === 'safe' ? 'safe' : 'a mine'}; the opposite would contradict the clues.
+    {/if}
+  {:else}
+    The board has {countLabel(game.config.mines, 'mine')}. {countLabel(reason.knownMines, 'mine')}
+    {reason.knownMines === 1 ? 'is' : 'are'} already proven, leaving
+    {countLabel(reason.remainingMines, 'mine')} among {countLabel(
+      reason.unknownCells,
+      'undecided square',
+    )}. This square is {hint.kind === 'safe' ? 'safe' : 'a mine'}.
+  {/if}
+{/snippet}
 
 {#snippet board()}
   <div
@@ -496,6 +781,7 @@
       </span>
     {/each}
     {#each game.cells as cell, index (index)}
+      {@const hintRole = activeHintRoles.get(index)}
       {#if index % game.config.columns === 0}
         <span class="board-coordinate row-coordinate" aria-hidden="true">
           {Math.floor(index / game.config.columns) + 1}
@@ -509,8 +795,14 @@
         class:mine={game.phase === 'lost' && cell.mine}
         class:detonated={game.detonatedIndex === index}
         class:incorrect={game.phase === 'lost' && cell.flagged && !cell.mine}
+        data-hint-role={hintRole}
+        data-cell-index={index}
         data-adjacent={cell.revealed && !cell.mine ? cell.adjacent : undefined}
-        aria-label={cellLabel(cell, index, game)}
+        aria-label={`${cellLabel(cell, index, game)}${hintRole ? `; hint: ${HINT_ROLE_LABELS[hintRole]}` : ''}`}
+        title={hintRole
+          ? `${coordinateLabel(index, game.config)} · ${HINT_ROLE_LABELS[hintRole]}`
+          : undefined}
+        aria-describedby={activeHint?.index === index ? 'current-game-hint' : undefined}
         disabled={menuOpen ||
           game.phase === 'won' ||
           game.phase === 'lost' ||
@@ -519,6 +811,7 @@
         oncontextmenu={(event) => {
           event.preventDefault();
           game = toggleFlag(game, index);
+          clearHints();
         }}
       >
         <span aria-hidden="true">{cellContent(cell, game)}</span>
@@ -632,6 +925,70 @@
     {/if}
     <span><strong>{elapsedSeconds}</strong> seconds</span>
   </div>
+
+  {#if storageReady && !menuOpen && game.phase === 'playing'}
+    <div class="hint-area">
+      <button type="button" class="action" onclick={showHints}>Hint</button>
+      {#if hints !== null}
+        <div class="hint-card">
+          <div aria-live="polite">
+            {#if activeHint}
+              <p class="hint-count">Hint {hintCursor + 1} of {hints.length}</p>
+              <p class="hint-heading" id="current-game-hint">
+                {hintAction(activeHint)}
+                {@render hintCoordinate(
+                  activeHint.index,
+                  activeHint.kind === 'mine' ? 'target-mine' : 'target-safe',
+                )}
+              </p>
+              <p class="hint-explanation">{@render hintExplanation(activeHint)}</p>
+            {:else}
+              <p class="hint-explanation">
+                No guaranteed move follows from the revealed clues right now.
+              </p>
+            {/if}
+          </div>
+          <div class="hint-actions">
+            {#if activeHint}
+              <button
+                type="button"
+                class="action hint-apply"
+                onclick={() => performHint(activeHint)}
+                disabled={activeHint.kind === 'mine' && game.flagsCount >= game.config.mines}
+                title={activeHint.kind === 'mine' && game.flagsCount >= game.config.mines
+                  ? 'Remove a flag before applying this hint'
+                  : undefined}
+                aria-describedby="current-game-hint"
+              >
+                Apply hint
+              </button>
+              <button type="button" class="action hint-secondary" onclick={nextHint}>
+                Next hint
+              </button>
+              <button type="button" class="action hint-secondary" onclick={lastHint}>
+                Last hint
+              </button>
+            {/if}
+            <button type="button" class="action hint-secondary" onclick={clearHints}>Hide</button>
+          </div>
+          {#if activeHint}
+            <div class="hint-key">
+              <Details title={hintDetailsLabel} bind:open={showHintDetails}>
+                <div class="hint-legend" aria-label="Highlighted cells">
+                  {#each activeHintLegend as { role, label, count } (role)}
+                    <span class="hint-legend-item">
+                      <span class="hint-swatch" data-hint-role={role} aria-hidden="true"></span>
+                      {label}{count > 1 ? ` (${count})` : ''}
+                    </span>
+                  {/each}
+                </div>
+              </Details>
+            </div>
+          {/if}
+        </div>
+      {/if}
+    </div>
+  {/if}
 
   {#if generationError}
     <p class="generation-error" role="alert">{generationError}</p>
@@ -880,6 +1237,133 @@
     font-size: 0.875rem;
   }
 
+  .hint-area {
+    display: grid;
+    justify-items: start;
+    gap: 0.75rem;
+    min-width: 0;
+    width: 100%;
+    margin: -0.25rem 0 1.25rem;
+  }
+
+  .hint-card {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.75rem 0.875rem;
+    border: 1px solid var(--theme-border-color);
+    border-radius: 0.5rem;
+    background: light-dark(var(--color-50), var(--color-900));
+    color: light-dark(var(--color-800), var(--color-200));
+    font-size: 0.875rem;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+  }
+
+  .hint-count {
+    margin: 0 0 0.25rem;
+    color: light-dark(var(--color-700), var(--color-300));
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+  }
+
+  .hint-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  .hint-coordinate {
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.5rem;
+    padding: 0.05rem 0.4rem;
+    border: 1px solid var(--hint-stroke);
+    border-radius: 0.35rem;
+    background: var(--hint-fill);
+    color: var(--hint-stroke);
+    font-size: 0.85em;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  .hint-coordinate[data-hint-role='clue'] {
+    padding-inline: 0.1rem;
+    border-color: transparent;
+    background: transparent;
+  }
+
+  .hint-explanation {
+    margin: 0.35rem 0 0;
+  }
+
+  .hint-key {
+    margin-top: 0.5rem;
+    color: light-dark(var(--color-700), var(--color-300));
+    font-size: 0.75rem;
+  }
+
+  .hint-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 0.85rem;
+    padding: 0.625rem 0.875rem;
+  }
+
+  .hint-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .hint-swatch {
+    width: 0.7rem;
+    height: 0.7rem;
+    box-sizing: border-box;
+    border: 2px solid var(--hint-stroke);
+    border-radius: 0.2rem;
+    background: var(--hint-fill);
+  }
+
+  .hint-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.625rem;
+  }
+
+  .hint-actions .action.hint-apply {
+    border-color: light-dark(var(--color-300), var(--color-700));
+    background: light-dark(var(--color-200), var(--color-800));
+    color: light-dark(var(--color-900), var(--color-100));
+    font-weight: 650;
+  }
+
+  .hint-actions .action.hint-apply:hover {
+    background: light-dark(var(--color-300), var(--color-700));
+  }
+
+  .hint-actions .action.hint-secondary {
+    border-color: transparent;
+    background: transparent;
+  }
+
+  .hint-actions .action.hint-secondary:hover {
+    border-color: var(--theme-border-color);
+    background: light-dark(var(--color-100), var(--color-800));
+  }
+
+  .hint-actions .action:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+
   .scoreboard {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -1047,6 +1531,54 @@
 
   .cell.detonated {
     background: light-dark(var(--color-offset-120-100), var(--color-offset-120-900));
+  }
+
+  :where(.cell, .hint-coordinate, .hint-swatch)[data-hint-role='target-mine'] {
+    --hint-stroke: light-dark(oklch(0.47 0.18 25), oklch(0.8 0.14 25));
+    --hint-fill: light-dark(oklch(0.94 0.035 25), oklch(0.31 0.055 25));
+  }
+
+  :where(.cell, .hint-coordinate, .hint-swatch)[data-hint-role='target-safe'] {
+    --hint-stroke: light-dark(oklch(0.43 0.14 145), oklch(0.78 0.15 145));
+    --hint-fill: light-dark(oklch(0.94 0.035 145), oklch(0.3 0.055 145));
+  }
+
+  :where(.cell, .hint-coordinate, .hint-swatch)[data-hint-role='clue'] {
+    --hint-stroke: light-dark(oklch(0.43 0.15 245), oklch(0.79 0.11 245));
+    --hint-fill: light-dark(oklch(0.94 0.035 245), oklch(0.3 0.055 245));
+  }
+
+  :where(.cell, .hint-coordinate, .hint-swatch)[data-hint-role='proven-mine'] {
+    --hint-stroke: light-dark(oklch(0.45 0.13 75), oklch(0.82 0.13 75));
+    --hint-fill: light-dark(oklch(0.95 0.04 75), oklch(0.31 0.055 75));
+  }
+
+  :where(.cell, .hint-coordinate, .hint-swatch)[data-hint-role='proven-safe'] {
+    --hint-stroke: light-dark(oklch(0.42 0.12 190), oklch(0.79 0.11 190));
+    --hint-fill: light-dark(oklch(0.94 0.035 190), oklch(0.3 0.055 190));
+  }
+
+  :where(.cell, .hint-coordinate, .hint-swatch)[data-hint-role='undecided'] {
+    --hint-stroke: light-dark(oklch(0.48 0.15 305), oklch(0.8 0.12 305));
+    --hint-fill: light-dark(oklch(0.95 0.035 305), oklch(0.31 0.055 305));
+  }
+
+  .cell[data-hint-role],
+  .cell[data-hint-role]:not(:disabled):hover {
+    border-color: var(--hint-stroke);
+    background: var(--hint-fill);
+    z-index: 1;
+  }
+
+  .cell[data-hint-role='undecided'],
+  .cell[data-hint-role='undecided']:not(:disabled):hover {
+    border-color: var(--theme-border-color);
+  }
+
+  .cell[data-hint-role^='target-'] {
+    outline: 2px solid var(--hint-stroke);
+    outline-offset: 1px;
+    z-index: 2;
   }
 
   .cell[data-adjacent='2'],
