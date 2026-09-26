@@ -345,6 +345,7 @@
       }
     ],
     "typescript/switch-exhaustiveness-check": "error",
+    "personal-site/no-add-event-listener": "error",
     "personal-site/no-function-keyword": "error",
     "eslint/prefer-arrow-callback": "error",
     "typescript/consistent-type-imports": [
