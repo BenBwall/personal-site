@@ -1,13 +1,14 @@
+import { fullHueRotation, maxChroma } from '$lib/theme/parsing';
+import { themeChannelsSchema } from '$lib/theme/schemas';
 import { z } from '$lib/validation';
 
-export const fullHueRotation = 360;
-export const maxChroma = 0.5;
+export { fullHueRotation, maxChroma } from '$lib/theme/parsing';
 export const maxRainbowIntervalMs = 2_147_483_647;
 
 const themeSchema = z.object({
-  chroma: z.number().min(0).max(maxChroma).default(0.14),
-  hue: z.int().min(0).max(fullHueRotation).default(250),
-  luminosity: z.number().min(0).max(1).default(0.6),
+  chroma: themeChannelsSchema.shape.chroma.default(0.14),
+  hue: themeChannelsSchema.shape.hue.default(250),
+  luminosity: themeChannelsSchema.shape.luminosity.default(0.6),
   rainbowChromaEnabled: z.boolean().default(false),
   rainbowChromaIncrement: z.int().min(1).max(50).default(1),
   rainbowChromaIntervalMs: z.int().min(1).max(maxRainbowIntervalMs).default(100),

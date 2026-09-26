@@ -1,14 +1,10 @@
-import { z } from '$lib/validation';
+import { type Preferences, parsePreferences } from '$lib/theme/parsing';
 import { on } from 'svelte/events';
 
-const preferenceSchema = z.object({
-  reducedMotion: z.boolean(),
-});
-const storedPreferenceSchema = preferenceSchema.partial();
 const storageKey = 'appearance-preferences';
 const reducedMotionQuery = '(prefers-reduced-motion: reduce)';
 
-export type Preferences = z.infer<typeof preferenceSchema>;
+export type { Preferences } from '$lib/theme/parsing';
 
 export const preferences = $state<Preferences>({
   reducedMotion: false,
@@ -19,7 +15,8 @@ let overrides: Partial<Preferences> = {};
 
 const readOverrides = (): Partial<Preferences> => {
   try {
-    return storedPreferenceSchema.parse(JSON.parse(localStorage.getItem(storageKey) ?? '{}'));
+    const saved: unknown = JSON.parse(localStorage.getItem(storageKey) ?? '{}');
+    return parsePreferences(saved);
   } catch {
     return {};
   }
