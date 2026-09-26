@@ -2,7 +2,18 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { validateIsSolvable } from '$/lib/minesweeper/constraint-solving/find-solvable-games';
-import { type GameConfig, createGame, minesForDifficulty, revealCell } from '$lib/minesweeper/game';
+import {
+  findPlayableHints,
+  hintProofSteps,
+} from '$/lib/minesweeper/constraint-solving/generate-hints';
+import {
+  type Game,
+  type GameConfig,
+  createGame,
+  minesForDifficulty,
+  revealCell,
+  toggleFlag,
+} from '$lib/minesweeper/game';
 import {
   type SavedGameState,
   readSavedGameState,
@@ -68,6 +79,167 @@ void test('generated preset boards are safe on the first click and certified wit
       assert.equal(game.cells[startIndex].adjacent, 0);
       assert.equal(game.cells[startIndex].revealed, true);
       assert.equal(validateIsSolvable(game.cells, config, startIndex), true);
+    }
+  }
+});
+
+void test('hints use visible clues, remain safe with a wrong flag, and explain each move', () => {
+  const config: GameConfig = {
+    columns: 8,
+    mines: minesForDifficulty('easy', 8, 8),
+    noGuessingRequired: true,
+    rows: 8,
+  };
+  const game = revealCell(createGame(config), 36, randomFromSeed(1));
+  const hints = findPlayableHints(game);
+  assert.ok(hints.length > 1);
+  assert.equal(new Set(hints.map(({ index }) => index)).size, hints.length);
+  for (const hint of hints) {
+    const steps = hintProofSteps(hint);
+    const proven = new Set<number>();
+    for (const step of steps) {
+      assert.ok(step.prerequisites.every((prerequisite) => proven.has(prerequisite.index)));
+      assert.ok(!proven.has(step.index));
+      proven.add(step.index);
+    }
+    assert.equal(steps.at(-1)?.index, hint.index);
+    assert.equal(game.cells[hint.index].revealed, false);
+    assert.equal(game.cells[hint.index].mine, hint.kind === 'mine');
+    assert.ok(hint.references.undecidedIndices.includes(hint.index));
+    assert.ok(hint.references.provenMineIndices.every((index) => game.cells[index].mine));
+    assert.ok(hint.references.provenSafeIndices.every((index) => !game.cells[index].mine));
+    if (hint.reason.kind === 'clue') {
+      assert.equal(game.cells[hint.reason.clueIndex].revealed, true);
+      assert.deepEqual(hint.references.clueIndices, [hint.reason.clueIndex]);
+      assert.equal(hint.references.provenMineIndices.length, hint.reason.knownMines);
+      assert.equal(hint.references.provenSafeIndices.length, hint.reason.knownSafe);
+      assert.equal(hint.references.undecidedIndices.length, hint.reason.unknownNeighbors);
+      if (hint.kind === 'safe') {
+        assert.equal(hint.reason.remainingMines, 0);
+      } else {
+        assert.equal(hint.reason.remainingMines, hint.reason.unknownNeighbors);
+      }
+    } else if (hint.reason.kind === 'constraints') {
+      assert.ok(hint.reason.clueIndices.length > 0);
+      assert.ok(hint.reason.clueIndices.every((index) => game.cells[index].revealed));
+      assert.deepEqual(hint.references.clueIndices, hint.reason.clueIndices);
+    }
+  }
+
+  const obscured = structuredClone(game);
+  for (const cell of obscured.cells) {
+    if (!cell.revealed) {
+      cell.mine = !cell.mine;
+    }
+  }
+  assert.deepEqual(findPlayableHints(obscured), hints);
+
+  const safeHint = hints.find(({ kind }) => kind === 'safe');
+  assert.ok(safeHint);
+  const wrongFlag = structuredClone(game);
+  wrongFlag.cells[safeHint.index].flagged = true;
+  wrongFlag.flagsCount += 1;
+  assert.deepEqual(findPlayableHints(wrongFlag), hints);
+});
+
+void test('a satisfied clue explains safe neighbors only when its flags are proven mines', () => {
+  const config: GameConfig = { columns: 3, mines: 2, noGuessingRequired: false, rows: 3 };
+  const cells = cellsWithMines(3, 3, [0, 2]);
+  cells.forEach((cell, index) => {
+    cell.revealed = !cell.mine && index !== 4;
+    cell.flagged = index === 0 || index === 2;
+  });
+  const game: Game = {
+    cells,
+    config,
+    detonatedIndex: null,
+    flagsCount: 2,
+    phase: 'playing',
+    revealedCount: 6,
+  };
+  const hint = findPlayableHints(game).find(({ index }) => index === 4);
+  assert.ok(hint);
+  assert.equal(hint.kind, 'safe');
+  assert.deepEqual(hint.reason, { clueIndex: 1, kind: 'satisfied-clue', mineCount: 2 });
+  assert.deepEqual(hint.references, {
+    clueIndices: [1],
+    provenMineIndices: [0, 2],
+    provenSafeIndices: [3, 5],
+    undecidedIndices: [4],
+  });
+  const steps = hintProofSteps(hint);
+  assert.equal(steps.at(-1)?.index, hint.index);
+  assert.equal(new Set(steps.map((step) => step.index)).size, steps.length);
+
+  const wrongFlag = structuredClone(game);
+  wrongFlag.cells[0].flagged = false;
+  wrongFlag.cells[2].flagged = false;
+  wrongFlag.cells[4].flagged = true;
+  wrongFlag.flagsCount = 1;
+  const wrongFlagHint = findPlayableHints(wrongFlag).find(({ index }) => index === 4);
+  assert.ok(wrongFlagHint);
+  assert.equal(wrongFlagHint.kind, 'safe');
+  assert.notEqual(wrongFlagHint.reason.kind, 'satisfied-clue');
+});
+
+void test('a constraint hint identifies two clue groups that exhaust a third clue', () => {
+  const config: GameConfig = { columns: 8, mines: 10, noGuessingRequired: true, rows: 8 };
+  const game = revealCell(createGame(config), 36, randomFromSeed(10));
+  const hint = findPlayableHints(game).find(({ index }) => index === 5);
+  assert.ok(hint);
+  assert.equal(hint.kind, 'safe');
+  assert.equal(hint.reason.kind, 'constraints');
+  assert.equal(hint.reason.proof.kind, 'covered-clue');
+  const { anchor, groups, remaining } = hint.reason.proof;
+  assert.equal(anchor.clueIndex, 14);
+  assert.equal(anchor.mines, 2);
+  assert.deepEqual(
+    groups.map(({ constraint }) => constraint.clueIndex),
+    [22, 15],
+  );
+  assert.deepEqual(
+    groups.map(({ shared }) => shared),
+    [
+      [13, 21],
+      [6, 7],
+    ],
+  );
+  assert.equal(
+    groups.reduce((total, { bound }) => total + bound, 0),
+    anchor.mines,
+  );
+  assert.deepEqual(remaining, [hint.index]);
+  assert.deepEqual(hint.references.clueIndices, [14, 22, 15]);
+});
+
+void test('following hints can finish a generated no-guess game', () => {
+  for (const [size, difficulty, seeds] of [
+    [8, 'easy', 6],
+    [12, 'medium', 2],
+    [16, 'hard', 2],
+  ] as const) {
+    const config: GameConfig = {
+      columns: size,
+      mines: minesForDifficulty(difficulty, size, size),
+      noGuessingRequired: true,
+      rows: size,
+    };
+    for (let seed = 1; seed <= seeds; seed += 1) {
+      let game = revealCell(
+        createGame(config),
+        Math.floor((size * size) / 2),
+        randomFromSeed(seed),
+      );
+      for (let steps = 0; steps < size * size && game.phase === 'playing'; steps += 1) {
+        const hints = findPlayableHints(game);
+        assert.ok(
+          hints.length > 0,
+          `No hint after ${steps} moves on ${size}×${size}, seed ${seed}.`,
+        );
+        const next = hints[0];
+        game = next.kind === 'mine' ? toggleFlag(game, next.index) : revealCell(game, next.index);
+      }
+      assert.equal(game.phase, 'won', `${size}×${size}, seed ${seed} did not finish.`);
     }
   }
 });
