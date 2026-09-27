@@ -79,6 +79,7 @@ const storedGameSchema = z
 const savedGameStateSchema = z.object({
   difficulty: z.enum(['easy', 'medium', 'hard']).nullable(),
   elapsedSeconds: z.int().nonnegative(),
+  flagCheckMode: z.enum(['board', 'proof']).default('board'),
   game: storedGameSchema,
   menuOpen: z.boolean(),
   scrollLeft: z.number().nonnegative().default(0),
@@ -112,9 +113,26 @@ export const readSavedGameState = (raw: string | null, now = Date.now()): SavedG
     if (!result.success) {
       return null;
     }
-    const { difficulty, elapsedSeconds, game, menuOpen, scrollLeft, scrollTop, setup } =
-      result.data;
-    return { difficulty, elapsedSeconds, game, menuOpen, scrollLeft, scrollTop, setup };
+    const {
+      difficulty,
+      elapsedSeconds,
+      flagCheckMode,
+      game,
+      menuOpen,
+      scrollLeft,
+      scrollTop,
+      setup,
+    } = result.data;
+    return {
+      difficulty,
+      elapsedSeconds,
+      flagCheckMode,
+      game,
+      menuOpen,
+      scrollLeft,
+      scrollTop,
+      setup,
+    };
   } catch {
     return null;
   }

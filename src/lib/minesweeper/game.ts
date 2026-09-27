@@ -1,4 +1,5 @@
 import { placeMines } from '$lib/minesweeper/constraint-solving/find-solvable-games';
+import { searchSettingsSchema } from '$lib/minesweeper/constraint-solving/search-settings';
 import { neighborsOf } from '$lib/minesweeper/neighbors';
 import { z } from '$lib/validation';
 
@@ -22,6 +23,7 @@ export const gameConfigSchema = boardSizeSchema
   .safeExtend({
     mines: z.int().min(1),
     noGuessingRequired: z.boolean(),
+    searchSettings: searchSettingsSchema.optional(),
   })
   .refine(({ columns, mines, rows }) => mines <= maxMineCount(rows, columns), {
     message: 'Leave enough safe cells for the first click and its neighbors.',

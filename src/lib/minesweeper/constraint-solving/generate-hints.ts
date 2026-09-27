@@ -352,8 +352,23 @@ const withSatisfiedFlaggedClue = (
   };
 };
 
+type HintOptions = { includeFlaggedMines?: boolean };
+
+/** Present deductions as playable hints, optionally including mines already flagged. */
+const playableHints = (
+  state: State,
+  hints: ReadonlyMap<number, PlayableHint>,
+  options: HintOptions,
+): PlayableHint[] =>
+  [...hints.values()]
+    .filter(
+      ({ index, kind }) =>
+        kind === 'safe' || !state.cells[index].flagged || options.includeFlaggedMines,
+    )
+    .map((hint) => withSatisfiedFlaggedClue(state, hints, hint));
+
 /** Suggest deductions from the visible position; player flags are not assumed to be correct. */
-export const findPlayableHints = (game: Game): PlayableHint[] => {
+export const findPlayableHints = (game: Game, options: HintOptions = {}): PlayableHint[] => {
   if (game.phase !== 'playing') {
     return [];
   }
@@ -449,7 +464,5 @@ export const findPlayableHints = (game: Game): PlayableHint[] => {
       progress = addMoves({ mines: unknown, safe: [] }, reason, references) || progress;
     }
   }
-  return [...hints.values()]
-    .filter(({ index, kind }) => kind === 'safe' || !game.cells[index].flagged)
-    .map((hint) => withSatisfiedFlaggedClue(state, hints, hint));
+  return playableHints(state, hints, options);
 };

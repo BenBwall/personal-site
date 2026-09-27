@@ -1,6 +1,10 @@
+import { type Moves, type State, nextMoves } from '$lib/minesweeper/constraint-solving/core';
+import {
+  DEFAULT_SEARCH_SETTINGS,
+  type SearchProgress,
+} from '$lib/minesweeper/constraint-solving/search-settings';
 import type { Cell, GameConfig } from '$lib/minesweeper/game';
 import { neighborsOf } from '$lib/minesweeper/neighbors';
-import { type Moves, type State, nextMoves } from '$lib/minesweeper/constraint-solving/core';
 
 /** Reveal safe cells and expand empty regions, returning false if a mine is encountered. */
 const openSafeCells = (state: State, indices: readonly number[]): boolean => {
@@ -69,25 +73,39 @@ export const placeMines = (
   safeIndex: number,
   config: GameConfig,
   random: () => number,
+  onProgress?: (progress: SearchProgress) => void,
 ): Cell[] => {
   if (!config.noGuessingRequired) {
     return placeMinesOnce(cells, safeIndex, config, random);
   }
 
   // Kunz (2024), section 3.4: random candidates first, then iterative mine placement.
-  const deadline = Date.now() + 1500;
-  const randomDeadline = Date.now() + 400;
-  for (let attempts = 0; attempts < 1000 && Date.now() < randomDeadline; attempts += 1) {
+  const settings = config.searchSettings ?? DEFAULT_SEARCH_SETTINGS;
+  const startedAt = Date.now();
+  const randomDeadline = startedAt + settings.randomTimeLimitMs;
+  let boardsChecked = 0;
+  const report = (phase: SearchProgress['phase'], minesPlaced: number) => {
+    onProgress?.({ boardsChecked, elapsedMs: Date.now() - startedAt, minesPlaced, phase });
+  };
+  report('random', 0);
+  for (
+    let attempts = 0;
+    attempts < settings.maxRandomAttempts && Date.now() < randomDeadline;
+    ++attempts
+  ) {
     cells = placeMinesOnce(cells, safeIndex, config, random);
-    if (validateIsSolvable(cells, config, safeIndex)) {
+    const solvable = validateIsSolvable(cells, config, safeIndex);
+    boardsChecked += 1;
+    report('random', config.mines);
+    if (solvable) {
       return cells;
     }
   }
-  const iterative = placeMinesIteratively(cells, safeIndex, config, random, deadline);
-  if (iterative) {
-    return iterative;
-  }
-  throw new Error('Could not create a no-guess board. Try fewer mines or turn off no-guess mode.');
+  report('iterative', 0);
+  return placeMinesIteratively(cells, safeIndex, config, random, (mines) => {
+    boardsChecked += 1;
+    report('iterative', mines);
+  });
 };
 
 /** Copy the cells with the chosen mine positions and recalculated adjacent mine counts. */
@@ -102,20 +120,20 @@ const boardWithMines = (
     mine: mineIndices.has(index),
   }));
 
-/** Add mines while preserving solvability and the safe opening, retrying until the deadline. */
+/** Add mines while preserving solvability, retrying until a complete board is found. */
 const placeMinesIteratively = (
   cells: Cell[],
   safeIndex: number,
   config: GameConfig,
   random: () => number,
-  deadline: number,
-): Cell[] | null => {
+  onCandidate: (minesPlaced: number) => void,
+): Cell[] => {
   const excluded = new Set([safeIndex, ...neighborsOf(safeIndex, config)]);
   const candidates = cells.map((_, index) => index).filter((index) => !excluded.has(index));
   let available = [...candidates];
   let rejected: number[] = [];
   let mines = new Set<number>();
-  while (Date.now() < deadline) {
+  while (true) {
     if (available.length === 0) {
       available = [...candidates];
       rejected = [];
@@ -125,7 +143,9 @@ const placeMinesIteratively = (
     const [index] = available.splice(choice, 1);
     mines.add(index);
     const candidate = boardWithMines(cells, config, mines);
-    if (validateIsSolvable(candidate, { ...config, mines: mines.size }, safeIndex)) {
+    const solvable = validateIsSolvable(candidate, { ...config, mines: mines.size }, safeIndex);
+    onCandidate(solvable ? mines.size : mines.size - 1);
+    if (solvable) {
       if (mines.size === config.mines) {
         return candidate;
       }
@@ -136,7 +156,6 @@ const placeMinesIteratively = (
       rejected.push(index);
     }
   }
-  return null;
 };
 
 /** Randomly place mines outside the starting cell and its neighbors. */

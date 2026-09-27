@@ -4,25 +4,43 @@ import {
 } from '$lib/minesweeper/constraint-solving/generate-hints';
 import type { Game } from '$lib/minesweeper/game';
 
-export type FlagCheck = {
-  flagsCount: number;
-  wrongFlags: { index: number; hint: PlayableHint | null }[];
+export type FlagCheckMode = 'board' | 'proof';
+export type CheckedFlag = {
+  hint: PlayableHint | null;
+  index: number;
+  status: 'correct' | 'incorrect' | 'unproven';
 };
+export type FlagCheck = { flags: CheckedFlag[]; mode: FlagCheckMode };
 
-/** Check placed flags against the board and attach available deductions proving them wrong. */
-export const checkFlags = (game: Game): FlagCheck | null => {
+/** Check flags against either the hidden layout or deductions from the visible clues. */
+export const checkFlags = (game: Game, mode: FlagCheckMode = 'board'): FlagCheck | null => {
   if (game.phase === 'ready') {
     return null;
   }
   const flags = game.cells.flatMap((cell, index) => (cell.flagged ? [index] : []));
-  const wrong = flags.filter((index) => !game.cells[index].mine);
-  const safeHints = new Map(
-    (wrong.length > 0 ? findPlayableHints(game) : [])
-      .filter((hint) => hint.kind === 'safe')
-      .map((hint) => [hint.index, hint]),
+  const needsProof = mode === 'proof' || flags.some((index) => !game.cells[index].mine);
+  const proofs = new Map(
+    (needsProof ? findPlayableHints(game, { includeFlaggedMines: true }) : []).map((hint) => [
+      hint.index,
+      hint,
+    ]),
   );
   return {
-    flagsCount: flags.length,
-    wrongFlags: wrong.map((index) => ({ hint: safeHints.get(index) ?? null, index })),
+    flags: flags.map((index): CheckedFlag => {
+      const hint = proofs.get(index) ?? null;
+      if (mode === 'proof') {
+        return {
+          hint,
+          index,
+          status: hint === null ? 'unproven' : hint.kind === 'mine' ? 'correct' : 'incorrect',
+        };
+      }
+      return {
+        hint: hint?.kind === 'safe' ? hint : null,
+        index,
+        status: game.cells[index].mine ? 'correct' : 'incorrect',
+      };
+    }),
+    mode,
   };
 };
