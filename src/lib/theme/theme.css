@@ -62,6 +62,10 @@
 }
 
 :root {
+  --theme-accent-color: light-dark(
+    oklch(from var(--color-700) l c calc(h + 90)),
+    oklch(from var(--color-300) l c calc(h + 90))
+  );
   --theme-border-color: light-dark(var(--color-200), var(--color-800));
   --disabled-opacity: 0.45;
   --theme-luminosity: 0.6;

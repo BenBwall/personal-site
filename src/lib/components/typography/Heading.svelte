@@ -1,7 +1,8 @@
 <script lang="ts">
+  import type { HeadingLevel, TypographyTone } from '$typography/types';
   import type { Snippet } from 'svelte';
   import type { HTMLAttributes } from 'svelte/elements';
-  import type { HeadingLevel, TypographyTone } from '$typography/types';
+
   import '$typography/scale.css';
 
   type Props = Omit<HTMLAttributes<HTMLHeadingElement>, 'children'> & {
@@ -19,7 +20,7 @@
   {...attributes}
   class={['heading', className]}
   data-size={size ?? level}
-  data-tone={tone ?? (level === 1 ? 'complement' : 'primary')}
+  data-tone={tone ?? (level === 1 ? 'accent' : 'primary')}
 >
   {@render children()}
 </svelte:element>
@@ -67,6 +68,10 @@
   /* Pair dark text on light surfaces with light text on dark surfaces for both palettes. */
   .heading[data-tone='primary'] {
     color: light-dark(var(--color-700), var(--color-300));
+  }
+
+  .heading[data-tone='accent'] {
+    color: var(--theme-accent-color);
   }
 
   .heading[data-tone='complement'] {

@@ -7,6 +7,10 @@
     onnewgame: () => void;
   };
   let { minesLeft, elapsedSeconds, pending, showNewGame, onnewgame }: Props = $props();
+
+  const hours = $derived(Math.floor(elapsedSeconds / 3600));
+  const minutes = $derived(Math.floor((elapsedSeconds % 3600) / 60));
+  const seconds = $derived(elapsedSeconds % 60);
 </script>
 
 <div class="scoreboard" class:pending aria-label="Game progress">
@@ -14,7 +18,15 @@
   {#if showNewGame}
     <button type="button" class="action" onclick={onnewgame}>New game</button>
   {/if}
-  <span><strong>{elapsedSeconds}</strong> seconds</span>
+  <span class="elapsed-time">
+    {#if hours > 0}
+      <span><strong>{hours}</strong> {hours === 1 ? 'hour' : 'hours'}</span>
+    {/if}
+    {#if minutes > 0 || hours > 0}
+      <span><strong>{minutes}</strong> {minutes === 1 ? 'minute' : 'minutes'}</span>
+    {/if}
+    <span><strong>{seconds}</strong> {seconds === 1 ? 'second' : 'seconds'}</span>
+  </span>
 </div>
 
 <style>
@@ -41,6 +53,17 @@
 
   .scoreboard.pending {
     visibility: hidden;
+  }
+
+  .elapsed-time {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.25rem;
+  }
+
+  .elapsed-time > span {
+    white-space: nowrap;
   }
 
   .scoreboard strong {

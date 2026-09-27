@@ -1,7 +1,8 @@
 <script lang="ts">
+  import type { TextElement, TextVariant, TypographyTone } from '$typography/types';
   import type { Snippet } from 'svelte';
   import type { HTMLAttributes } from 'svelte/elements';
-  import type { TextElement, TextVariant, TypographyTone } from '$typography/types';
+
   import '$typography/scale.css';
 
   type Props = Omit<HTMLAttributes<HTMLElement>, 'children'> & {
@@ -68,6 +69,10 @@
   /* Use the same light/dark shade pairs as headings so tones remain interchangeable. */
   .text[data-tone='primary'] {
     color: light-dark(var(--color-700), var(--color-300));
+  }
+
+  .text[data-tone='accent'] {
+    color: var(--theme-accent-color);
   }
 
   .text[data-tone='complement'] {
