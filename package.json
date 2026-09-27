@@ -13,7 +13,8 @@
     "prepare": "svelte-kit sync",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json && tsc --project tsconfig.scripts.json",
     "analyze": "fallow --fail-on-issues",
-    "lint": "oxlint",
+    "lint": "oxlint --max-warnings 0",
+    "test:lint": "bun test tests/lint",
     "fmt": "oxfmt",
     "generate:resume-pdf": "bun scripts/generate-resume-pdf.ts"
   },
@@ -25,6 +26,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@rsvelte/oxlint-plugin": "^0.2.5",
     "@sveltejs/adapter-static": "^3.0.10",
     "@sveltejs/kit": "^2.70.3",
     "@sveltejs/vite-plugin-svelte": "^7.3.0",

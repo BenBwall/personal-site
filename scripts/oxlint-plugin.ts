@@ -1,4 +1,8 @@
+import { readFileSync } from 'node:fs';
+
 import type { RuleTester } from 'oxlint/plugins-dev';
+
+import { analyzeSvelteSyntax } from '#scripts/svelte-lint.ts';
 
 export const noFunctionKeyword = {
   createOnce(context) {
@@ -77,7 +81,49 @@ export const noAddEventListener = {
   },
 } satisfies Parameters<RuleTester['run']>[1];
 
+export const noLegacySvelte = {
+  createOnce(context) {
+    return {
+      Program() {
+        const filename = context.physicalFilename;
+        if (!filename.endsWith('.svelte')) {
+          return;
+        }
+        const source = readFileSync(filename, 'utf8');
+        // Oxlint visits each script separately. Inspect the whole component
+        // only on the first script visit, avoiding duplicate template reports.
+        const { findings, firstScript } = analyzeSvelteSyntax(source);
+        if (firstScript?.trim() !== context.sourceCode.text.trim()) {
+          return;
+        }
+        for (const finding of findings) {
+          const prefix = source.slice(0, finding.start);
+          const line = prefix.split('\n').length;
+          const column = finding.start - prefix.lastIndexOf('\n');
+          // Oxlint only exposes script locations, so include the true template
+          // position in the message, matching the native Svelte plugin.
+          context.report({
+            loc: { start: { column: 0, line: 1 } },
+            message: `[${line}:${column}] ${finding.message}`,
+          });
+        }
+      },
+      before() {
+        return context.physicalFilename.endsWith('.svelte');
+      },
+    };
+  },
+  meta: {
+    schema: [],
+    type: 'suggestion',
+  },
+} satisfies Parameters<RuleTester['run']>[1];
+
 export default {
   meta: { name: 'personal-site' },
-  rules: { 'no-add-event-listener': noAddEventListener, 'no-function-keyword': noFunctionKeyword },
+  rules: {
+    'no-add-event-listener': noAddEventListener,
+    'no-function-keyword': noFunctionKeyword,
+    'no-legacy-svelte': noLegacySvelte,
+  },
 };

@@ -12,6 +12,7 @@
         "zod": "^4.6.5",
       },
       "devDependencies": {
+        "@rsvelte/oxlint-plugin": "^0.2.5",
         "@sveltejs/adapter-static": "^3.0.10",
         "@sveltejs/kit": "^2.70.3",
         "@sveltejs/vite-plugin-svelte": "^7.3.0",
@@ -245,6 +246,20 @@
     "@rolldown/binding-win32-x64-msvc": ["@rolldown/binding-win32-x64-msvc@1.2.9", "", { "os": "win32", "cpu": "x64" }, "sha512-Ip2mXoU0hM0boq3Rf+ekuT653OROSo6aSYcPT1VHE4q52KvyxgFkQgrgb/IEsxOuvQ2fZZbs8khJAyCEPM24/g=="],
 
     "@rolldown/pluginutils": ["@rolldown/pluginutils@1.0.1", "", {}, "sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw=="],
+
+    "@rsvelte/compiler": ["@rsvelte/compiler@0.12.4", "", { "peerDependencies": { "svelte": "^5.0.0" }, "optionalPeers": ["svelte"], "bin": { "rsvelte": "bin/rsvelte.mjs" } }, "sha512-cjaxeOKzkiPY4YLqAmP2Lr46E0pf7dxSe9pf1ENQiRtz8u77nKhDsXWdTVW4WfKkdpQyxZmFTn0EJ9I+chNxKA=="],
+
+    "@rsvelte/lint-darwin-arm64": ["@rsvelte/lint-darwin-arm64@0.12.4", "", { "os": "darwin", "cpu": "arm64" }, "sha512-DTMPJrKNyCLLeJADDkQ39pA+cSg7KQmbz433KZqDCi+I9tGvs3FvaRqj3vSexhhFwbM/VgB8fUWkV0XcrWqHDA=="],
+
+    "@rsvelte/lint-darwin-x64": ["@rsvelte/lint-darwin-x64@0.12.4", "", { "os": "darwin", "cpu": "x64" }, "sha512-xxpn8uM/UxFGwU+AhUkgneK8zk3EL+aSw/kZr2PGv6tN6Og5pLg63iWWrg/7mNn518tbL3He7Ikgc9mu4sZnyg=="],
+
+    "@rsvelte/lint-linux-arm64-gnu": ["@rsvelte/lint-linux-arm64-gnu@0.12.4", "", { "os": "linux", "cpu": "arm64" }, "sha512-0kNRaauxsgMcvd2/Pnt03mt3xhRRPu5pW3IC8/GsbejyHO3506Ggdp0NZtw1c4fpmnm9TBYnVBDRMtXdX31Ung=="],
+
+    "@rsvelte/lint-linux-x64-gnu": ["@rsvelte/lint-linux-x64-gnu@0.12.4", "", { "os": "linux", "cpu": "x64" }, "sha512-UL9xlJPzdHFZDApCtHWYao/2UlxTI4WpJ6rHjreRGHxRPPw1mBWp+JK+V+W5zFZ+E62dcaUAc8lqWMhefnL3NQ=="],
+
+    "@rsvelte/lint-win32-x64-msvc": ["@rsvelte/lint-win32-x64-msvc@0.12.4", "", { "os": "win32", "cpu": "x64" }, "sha512-F7lG5OsbzgvIiwV2uwqf8yj7BwGir9E1bGHeBjSYrDh13YJppQP9m1YH14atqfOnOcE+MXmo95KnvjO+2ShEqg=="],
+
+    "@rsvelte/oxlint-plugin": ["@rsvelte/oxlint-plugin@0.2.5", "", { "dependencies": { "@rsvelte/compiler": "^0.12.1" }, "optionalDependencies": { "@rsvelte/lint-darwin-arm64": "^0.12.1", "@rsvelte/lint-darwin-x64": "^0.12.1", "@rsvelte/lint-linux-arm64-gnu": "^0.12.1", "@rsvelte/lint-linux-x64-gnu": "^0.12.1", "@rsvelte/lint-win32-x64-msvc": "^0.12.1" } }, "sha512-mv0lsVQb/vEnaoS9vxCwlGgZW8SqsQ1kI8SI0mFdgBvpHNior+YLxtSFnxqZBeVbWzlO4C74sf7O7sfCcGNFeQ=="],
 
     "@standard-schema/spec": ["@standard-schema/spec@1.1.0", "", {}, "sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w=="],
 

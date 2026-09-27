@@ -1,18 +1,13 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["unicorn", "typescript", "oxc", "import"],
-  "jsPlugins": ["./scripts/oxlint-plugin.ts"],
+  "jsPlugins": ["./scripts/oxlint-plugin.ts", "@rsvelte/oxlint-plugin"],
+  "extends": ["./node_modules/@rsvelte/oxlint-plugin/recommended.json"],
   "categories": {
     "correctness": "error",
     "suspicious": "error"
   },
-  "ignorePatterns": [
-    "vendor/**",
-    "node_modules/**",
-    ".svelte-kit/**",
-    "build/**",
-    "dist/**"
-  ],
+  "ignorePatterns": ["vendor/**", "node_modules/**", ".svelte-kit/**", "build/**", "dist/**"],
   "overrides": [
     {
       "files": ["src/**/*.ts"],
@@ -278,6 +273,21 @@
     "eslint/no-restricted-imports": [
       "error",
       {
+        "paths": [
+          {
+            "name": "svelte",
+            "importNames": ["afterUpdate", "beforeUpdate", "createEventDispatcher"],
+            "message": "Use runes and callback props instead of legacy Svelte APIs."
+          },
+          {
+            "name": "svelte/legacy",
+            "message": "Use Svelte 5 APIs instead of compatibility helpers."
+          },
+          {
+            "name": "$app/stores",
+            "message": "Use $app/state instead of deprecated SvelteKit stores."
+          }
+        ],
         "patterns": [
           {
             "regex": "^\\.{1,2}([/\\\\]|$)",
@@ -344,6 +354,13 @@
     "typescript/switch-exhaustiveness-check": "error",
     "personal-site/no-add-event-listener": "error",
     "personal-site/no-function-keyword": "error",
+    "personal-site/no-legacy-svelte": "error",
+    "svelte/event_directive_deprecated": "error",
+    "svelte/slot_element_deprecated": "error",
+    "svelte/svelte_component_deprecated": "error",
+    "svelte/svelte_self_deprecated": "error",
+    "svelte/no-at-debug-tags": "error",
+    "svelte/no-inspect": "error",
     "eslint/prefer-arrow-callback": "error",
     "typescript/consistent-type-imports": [
       "error",

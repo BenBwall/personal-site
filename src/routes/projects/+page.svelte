@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { base } from '$app/paths';
+  import { asset, base } from '$app/paths';
   import { Heading, Text } from '$lib/components/typography';
   import { projects } from '$lib/data/projects';
   import { siGithub } from 'simple-icons';
@@ -41,13 +41,16 @@
           <a
             class="github-link"
             href={project.href}
+            rel="external"
             aria-label={`View ${project.title} on GitHub`}
             title={`View ${project.title} on GitHub`}
           >
-            <span aria-hidden="true">{@html siGithub.svg}</span>
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d={siGithub.path} />
+            </svg>
           </a>
           {#if project.liveUrl}
-            <a class="live-link" href={project.liveUrl}>Visit site</a>
+            <a class="live-link" href={project.liveUrl} rel="external">Visit site</a>
           {/if}
         </header>
         <div class="project-details">
@@ -92,7 +95,7 @@
                 default
               />
             {/if}
-            <a href={`${base}${project.demo.src}`}>Download the {project.title} demo</a>
+            <a href={asset(project.demo.src)}>Download the {project.title} demo</a>
           </video>
         {/if}
       </article>
@@ -144,10 +147,11 @@
     margin-inline-start: 0.5rem;
   }
 
-  .github-link :global(svg) {
+  .github-link svg {
     display: block;
     width: 24px;
     height: 24px;
+    /* GitHub branding is an intentional exception to the theme palette. */
     fill: light-dark(#000, #fff);
   }
 
