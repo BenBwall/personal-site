@@ -373,6 +373,13 @@
     border: 1px solid var(--theme-border-color);
     border-radius: 0.5rem;
     background: var(--board-surface);
+  }
+
+  .board,
+  .board * {
+    /* Prevent iOS text selection and callouts when holding a cell to flag it. */
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
     user-select: none;
   }
 
@@ -447,7 +454,6 @@
       sans-serif;
     cursor: pointer;
     touch-action: manipulation;
-    -webkit-touch-callout: none;
   }
 
   .cell:not(:disabled):hover {
