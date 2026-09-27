@@ -22,7 +22,7 @@
 </script>
 
 <svelte:head>
-  <script src={asset('/theme-init.js')}></script>
+  <script src={asset('/init/lib/theme/theme.js')}></script>
 </svelte:head>
 
 <div class="layout">
