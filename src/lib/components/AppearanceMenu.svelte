@@ -19,7 +19,7 @@
 
   let dialog: HTMLDialogElement;
   let isOpen = $state(false);
-  let theme = $state(browser ? getCurrentTheme() : { ...defaultTheme });
+  const theme = $state(browser ? getCurrentTheme() : { ...defaultTheme });
 
   onMount(() => applyTheme(theme));
 
@@ -219,7 +219,7 @@
   }
 
   dialog::backdrop {
-    background: rgb(0 0 0 / 8%);
+    background: color-mix(in srgb, var(--color-950) 8%, transparent);
   }
 
   .slider-group {

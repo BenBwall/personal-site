@@ -1,6 +1,7 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 
+import { generateFavicon } from '#scripts/generate-favicon.ts';
 import { generateImages } from '#scripts/generate-images.ts';
 import { generateThemeInit } from '#scripts/generate-theme-init.ts';
 
@@ -11,6 +12,12 @@ export default defineConfig(({ command }) => ({
     minify: 'oxc',
   },
   plugins: [
+    {
+      applyToEnvironment: (environment) => command === 'serve' || environment.name === 'ssr',
+      buildStart: generateFavicon,
+      enforce: 'pre',
+      name: 'generate-favicon',
+    },
     {
       applyToEnvironment: (environment) => command === 'serve' || environment.name === 'ssr',
       buildStart: generateThemeInit,

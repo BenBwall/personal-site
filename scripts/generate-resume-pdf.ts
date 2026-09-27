@@ -7,6 +7,8 @@ import { fileURLToPath } from 'node:url';
 import PDFKit from 'pdfkit';
 import { type AST, parse } from 'svelte/compiler';
 
+import { readThemeColors } from '#scripts/theme-colors.ts';
+
 type Element = AST.RegularElement | AST.Component;
 type Entry = {
   name: string;
@@ -29,7 +31,12 @@ if (outputFlag >= 0 && !process.argv[outputFlag + 1]) {
 }
 const output = outputFlag >= 0 ? resolvePath(process.argv[outputFlag + 1]) : defaultOutput;
 
-const colors = { ink: '#1c2733', muted: '#4d5b68', rule: '#cfd7df' };
+const themeColor = await readThemeColors();
+const colors = {
+  ink: themeColor('--color-950'),
+  muted: themeColor('--color-700'),
+  rule: themeColor('--color-200'),
+};
 const margins = { bottom: 30, left: 46, right: 46, top: 34 };
 const fonts = { bold: 'Helvetica-Bold', regular: 'Helvetica' };
 

@@ -271,8 +271,8 @@
   @media print {
     :global(html:has(.resume)) {
       color-scheme: light !important;
-      color: #111;
-      background: #fff;
+      color: var(--color-950);
+      background: var(--color-50);
     }
 
     :global(.layout:has(.resume) > header) {
@@ -296,7 +296,7 @@
       grid-template-columns: 9rem minmax(0, 1fr);
       gap: 1rem;
       padding-block: 1rem;
-      border-color: #ccc;
+      border-color: var(--theme-border-color);
     }
 
     article {
@@ -305,7 +305,7 @@
 
     :global(.resume .heading[data-tone]),
     :global(.resume .text[data-tone]) {
-      color: #111;
+      color: var(--color-950);
     }
 
     .resume-intro span,
@@ -313,11 +313,11 @@
     .entry-description,
     li,
     dd {
-      color: #444;
+      color: var(--color-700);
     }
 
     .resume-links a {
-      color: #111;
+      color: var(--color-950);
     }
 
     .resume-links a:not(:first-child) {

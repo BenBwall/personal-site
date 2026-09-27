@@ -20,6 +20,7 @@
         "@types/pdfkit": "^0.17.6",
         "@types/ssh2": "^1.15.6",
         "fallow": "^3.28.0",
+        "lightningcss": "^1.33.0",
         "oxfmt": "^0.68.0",
         "oxlint": "^1.83.0",
         "oxlint-tsgolint": "^7.0.2002",
