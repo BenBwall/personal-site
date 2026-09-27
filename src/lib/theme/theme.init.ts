@@ -10,10 +10,10 @@ const readThemeInitSaved = (key: string): unknown => {
 
 (() => {
   try {
-    const scheme = parseColorScheme(localStorage.getItem('color-scheme'));
-    if (scheme !== null) {
-      document.documentElement.style.colorScheme = scheme;
-    }
+    const scheme =
+      parseColorScheme(localStorage.getItem('color-scheme')) ??
+      (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.style.colorScheme = scheme;
   } catch {}
 
   const savedPreferences = parsePreferences(readThemeInitSaved('appearance-preferences'));

@@ -7,7 +7,6 @@
   import RangeInput from '$inputs/RangeInput.svelte';
   import { preferences, setPreference } from '$lib/theme/preferences.svelte';
   import {
-    applyTheme,
     defaultTheme,
     fullHueRotation,
     getCurrentTheme,
@@ -15,13 +14,10 @@
     setTheme,
   } from '$lib/theme/theme';
   import { Palette } from '@lucide/svelte';
-  import { onMount } from 'svelte';
 
   let dialog: HTMLDialogElement;
   let isOpen = $state(false);
   const theme = $state(browser ? getCurrentTheme() : { ...defaultTheme });
-
-  onMount(() => applyTheme(theme));
 
   const saveTheme = () => {
     const root = document.documentElement;

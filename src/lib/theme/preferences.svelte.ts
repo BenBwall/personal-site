@@ -24,7 +24,10 @@ const readOverrides = (): Partial<Preferences> => {
 
 const applyPreferences = () => {
   preferences.reducedMotion = overrides.reducedMotion ?? matches(reducedMotionQuery);
-  document.documentElement.dataset.reducedMotion = String(preferences.reducedMotion);
+  const value = String(preferences.reducedMotion);
+  if (document.documentElement.dataset.reducedMotion !== value) {
+    document.documentElement.dataset.reducedMotion = value;
+  }
 };
 
 export const setPreference = <Key extends keyof Preferences>(key: Key, value: Preferences[Key]) => {

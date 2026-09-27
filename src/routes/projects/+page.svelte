@@ -4,8 +4,8 @@
   import { projects } from '$lib/data/projects';
   import { siGithub } from 'simple-icons';
 
-  const previewWidths = [320, 480, 640, 960];
-  const previewSizes = '(max-width: 38rem) calc(100vw - 2rem), 36rem';
+  const previewWidths = [320, 400, 480, 640, 800, 960];
+  const previewSizes = '(max-width: 39rem) calc(100vw - 3rem), 36rem';
   const previewSources = (name: string, format: 'avif' | 'webp') =>
     previewWidths
       .map((width) => `${base}/images/generated/${name}-${width}.${format} ${width}w`)
@@ -70,7 +70,8 @@
               alt={project.preview.alt}
               width={project.preview.width}
               height={project.preview.height}
-              loading="lazy"
+              loading="eager"
+              fetchpriority="high"
               decoding="async"
             />
           </picture>

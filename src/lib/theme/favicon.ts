@@ -25,6 +25,7 @@ export const initializeFavicon = (): (() => void) | undefined => {
   document.body.append(probes);
 
   let timer: number | undefined;
+  let frame: number | undefined;
   let previousSvg = '';
   const update = () => {
     window.clearTimeout(timer);
@@ -40,18 +41,32 @@ export const initializeFavicon = (): (() => void) | undefined => {
       colorVariable,
       (match: string, name: string) => palette.get(name) ?? match,
     );
+    const animating = root.getAnimations().some((animation) => animation.playState === 'running');
     if (svg !== previousSvg) {
       link.href = `data:image/svg+xml,${encodeURIComponent(svg)}`;
       previousSvg = svg;
     }
 
     // CSS animations do not trigger mutation observers. Sample only while they run.
-    if (root.getAnimations().some((animation) => animation.playState === 'running')) {
-      timer = window.setTimeout(update, animationIntervalMs);
+    if (animating) {
+      timer = window.setTimeout(scheduleUpdate, animationIntervalMs);
     }
   };
 
-  const observer = new MutationObserver(update);
+  const scheduleUpdate = () => {
+    if (frame !== undefined) {
+      return;
+    }
+    // Let theme writes and hydration finish a paint before reading resolved colors.
+    frame = window.requestAnimationFrame(() => {
+      frame = window.requestAnimationFrame(() => {
+        frame = undefined;
+        update();
+      });
+    });
+  };
+
+  const observer = new MutationObserver(scheduleUpdate);
   observer.observe(root, {
     attributeFilter: [
       'style',
@@ -62,13 +77,16 @@ export const initializeFavicon = (): (() => void) | undefined => {
     ],
     attributes: true,
   });
-  const unsubscribeVisibility = on(document, 'visibilitychange', update);
-  update();
+  const unsubscribeVisibility = on(document, 'visibilitychange', scheduleUpdate);
+  scheduleUpdate();
 
   return () => {
     observer.disconnect();
     unsubscribeVisibility();
     window.clearTimeout(timer);
+    if (frame !== undefined) {
+      window.cancelAnimationFrame(frame);
+    }
     probes.remove();
     link.href = fallback;
   };

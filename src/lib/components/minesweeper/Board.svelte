@@ -61,7 +61,12 @@
   );
   $effect(() => {
     if (storageReady && boardScrollElement && scrollToRestore) {
-      boardScrollElement.scrollTo(scrollToRestore.left, scrollToRestore.top);
+      const { left, top } = scrollToRestore;
+      let frame = window.requestAnimationFrame(() => {
+        // Restore scrolling after the saved board has completed layout.
+        frame = window.requestAnimationFrame(() => boardScrollElement.scrollTo(left, top));
+      });
+      return () => window.cancelAnimationFrame(frame);
     }
   });
   $effect(() => {

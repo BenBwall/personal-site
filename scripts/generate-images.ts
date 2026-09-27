@@ -6,7 +6,7 @@ import sharp from 'sharp';
 
 const sourceDirectory = fileURLToPath(new URL('./source-images/', import.meta.url));
 const generatedDirectory = fileURLToPath(new URL('../static/images/generated/', import.meta.url));
-const widths = [320, 480, 640, 960];
+const widths = [320, 400, 480, 640, 800, 960];
 export const generateImages = async () => {
   const originals = (await readdir(sourceDirectory, { withFileTypes: true })).filter(
     (entry) => entry.isFile() && /\.(jpe?g|png)$/i.test(entry.name),

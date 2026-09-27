@@ -3,7 +3,7 @@ import type { Config } from '@sveltejs/kit';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 import { z } from 'zod';
 
-import { minifyStaticJs } from '#scripts/minify-static-js.ts';
+import { optimizeStaticOutput } from '#scripts/optimize-static-output.ts';
 
 const basePathSchema = z.union([z.literal(''), z.templateLiteral(['/', z.string()])]);
 const basePath = basePathSchema.safeParse(process.env.BASE_PATH ?? '');
@@ -13,12 +13,12 @@ if (!basePath.success) {
 
 const config: Config = {
   kit: {
-    adapter: minifyStaticJs(
+    adapter: optimizeStaticOutput(
       adapter({
         assets: 'dist',
         pages: 'dist',
-        precompress: true,
       }),
+      'dist',
     ),
     alias: {
       '$/*': './src/*',
@@ -35,6 +35,8 @@ const config: Config = {
       },
       mode: 'hash',
     },
+    // These small stylesheets are cheaper to include in the first response.
+    inlineStyleThreshold: 20_000,
     paths: {
       base: basePath.data,
     },

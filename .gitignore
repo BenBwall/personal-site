@@ -11,6 +11,8 @@ node_modules
 dist
 dist-ssr
 .svelte-kit
+.lighthouseci
+lighthouse-reports
 /static/images/generated/
 /static/init/
 *.local
