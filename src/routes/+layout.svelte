@@ -58,7 +58,7 @@
   :global(html) {
     color-scheme: light dark;
     color: light-dark(var(--color-700), var(--color-300));
-    background-color: light-dark(var(--color-50), var(--color-950));
+    background-color: light-dark(var(--color-complement-50), var(--color-complement-950));
   }
 
   .layout {
