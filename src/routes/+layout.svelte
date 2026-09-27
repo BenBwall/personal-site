@@ -3,9 +3,11 @@
   import { page } from '$app/state';
   import type { RouteId } from '$app/types';
   import AppearanceMenu from '$lib/components/AppearanceMenu.svelte';
+  import { initializeFavicon } from '$lib/theme/favicon';
+  import defaultFavicon from '$lib/theme/favicon-default.svg?raw';
 
   import '$lib/theme/theme.css';
-  import type { Snippet } from 'svelte';
+  import { type Snippet, onMount } from 'svelte';
 
   type Page = {
     label: string;
@@ -19,9 +21,14 @@
     { label: 'Projects', route: '/projects' },
     { label: 'Resume', route: '/resume' },
   ] as const satisfies readonly Page[];
+
+  onMount(initializeFavicon);
+
+  const initialFavicon = `data:image/svg+xml,${encodeURIComponent(defaultFavicon)}`;
 </script>
 
 <svelte:head>
+  <link id="site-favicon" rel="icon" type="image/svg+xml" href={initialFavicon} />
   <script src={asset('/init/lib/theme/theme.js')}></script>
 </svelte:head>
 
