@@ -1,6 +1,7 @@
 <script lang="ts">
   import { asset } from '$app/paths';
   import ArcadaMap from '$lib/components/ArcadaMap.svelte';
+  import Details from '$lib/components/Details.svelte';
   import { Heading, Text } from '$lib/components/typography';
 
   const galleryPhotos = [
@@ -229,21 +230,24 @@
     <audio class="demo-audio" aria-label="Ljudspår från Myvm-demon" controls preload="none">
       <source src={asset('/media/report/myvm-demo.m4a')} type="audio/mp4" />
     </audio>
-    <details class="demo-transcript">
-      <summary>Automatisk transkription</summary>
-      <Text>
-        Här är en virtuell maskin jag byggde för några år sedan, typ fem år sedan. Den innehåller...
-        Den är baserad på ett spel som heter Turing Complete.
-      </Text>
-      <Text>
-        Den implementerar en simpel virtuell maskin med olika aritmetiska och hoppinstruktioner och
-        move-instruktioner.
-      </Text>
-      <Text>
-        Här är ett exempel på ett testprogram som printar ut en emoji genom att skriva fyra olika
-        bytes till output-registret, som sen printar ut det.
-      </Text>
-    </details>
+    <div class="demo-transcript">
+      <Details title="Automatisk transkription">
+        <div class="transcript-content">
+          <Text>
+            Här är en virtuell maskin jag byggde för några år sedan, typ fem år sedan. Den
+            innehåller... Den är baserad på ett spel som heter Turing Complete.
+          </Text>
+          <Text>
+            Den implementerar en simpel virtuell maskin med olika aritmetiska och hoppinstruktioner
+            och move-instruktioner.
+          </Text>
+          <Text>
+            Här är ett exempel på ett testprogram som printar ut en emoji genom att skriva fyra
+            olika bytes till output-registret, som sen printar ut det.
+          </Text>
+        </div>
+      </Details>
+    </div>
   </section>
 
   <section id="validering" aria-labelledby="validering-title">
@@ -609,9 +613,8 @@
     margin-block: 1rem;
   }
 
-  .demo-transcript summary {
-    cursor: pointer;
-    margin-block-end: 1rem;
+  .transcript-content {
+    padding: 0.875rem;
   }
 
   .gallery-thumbnails {
