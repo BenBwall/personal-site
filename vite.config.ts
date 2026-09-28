@@ -2,6 +2,7 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 
 import { generateFavicon } from '#scripts/generate-favicon.ts';
+import { generateGallery } from '#scripts/generate-gallery.ts';
 import { generateImages } from '#scripts/generate-images.ts';
 import { generateInitScripts } from '#scripts/generate-init-scripts.ts';
 
@@ -12,6 +13,12 @@ export default defineConfig(({ command }) => ({
     minify: 'oxc',
   },
   plugins: [
+    {
+      applyToEnvironment: (environment) => command === 'serve' || environment.name === 'ssr',
+      buildStart: generateGallery,
+      enforce: 'pre',
+      name: 'generate-gallery',
+    },
     {
       applyToEnvironment: (environment) => command === 'serve' || environment.name === 'ssr',
       buildStart: generateFavicon,

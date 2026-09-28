@@ -1,0 +1,36 @@
+WEBVTT
+
+00:01.020 --> 00:06.100
+Här är en virtuell maskin jag byggde
+för några år sedan.
+
+00:07.440 --> 00:09.550
+Typ fem år sedan.
+
+00:09.760 --> 00:14.950
+Den innehåller... Den är baserad på
+ett spel som heter Turing Complete.
+
+00:15.500 --> 00:19.840
+Den implementerar en simpel
+virtuell maskin
+
+00:19.840 --> 00:25.240
+med olika
+
+00:25.240 --> 00:28.120
+aritmetiska och hoppinstruktioner
+
+00:28.120 --> 00:31.700
+och move-instruktioner.
+
+00:31.860 --> 00:36.020
+Här är ett exempel på ett testprogram
+som printar ut en emoji genom att
+
+00:38.620 --> 00:41.080
+skriva fyra olika bytes till
+
+00:41.080 --> 00:45.620
+output-registret, som sen
+printar ut det.

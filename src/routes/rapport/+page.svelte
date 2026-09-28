@@ -1,6 +1,17 @@
 <script lang="ts">
   import { asset } from '$app/paths';
+  import ArcadaMap from '$lib/components/ArcadaMap.svelte';
   import { Heading, Text } from '$lib/components/typography';
+
+  const galleryPhotos = [
+    { alt: 'Jag i kavaj och slips inför en sitz.', id: 'portrait', label: 'Kavaj och slips' },
+    { alt: 'Mina byxor och bruna skor inför sitzen.', id: 'outfit', label: 'Byxor och skor' },
+    {
+      alt: 'Jag uppklädd med solglasögon inför sitzen.',
+      id: 'sunglasses',
+      label: 'Solglasögon',
+    },
+  ] as const;
 
   const titles = {
     ai: ['Användning av generativ AI', 7],
@@ -153,6 +164,86 @@
       av animationerna om man vill, och de tar också hänsyn till enhetens inställning för minskad
       rörelse.
     </Text>
+
+    <Heading level={3} size={4} id="bildgalleri">Bildgalleri inför sitz</Heading>
+    <Text>
+      Bilderna är från när jag klädde upp mig inför TLKs sitcom sitz. En större bild visas direkt i
+      en iframe. Miniatyrbilderna är mindre filer och länkar till de större bilderna, som öppnas i
+      samma namngivna iframe.
+    </Text>
+    <iframe
+      class="gallery-viewer"
+      name="en_bildram"
+      title="Bildgalleri med bilder från när jag klädde upp mig inför en sitz"
+      src={asset('/images/generated/gallery/portrait-full.webp')}
+      loading="lazy"
+    ></iframe>
+    <nav aria-label="Välj en bild från sitzen">
+      <ul class="gallery-thumbnails">
+        {#each galleryPhotos as photo (photo.id)}
+          <li>
+            <a href={asset(`/images/generated/gallery/${photo.id}-full.webp`)} target="en_bildram">
+              <img
+                src={asset(`/images/generated/gallery/${photo.id}-thumbnail.webp`)}
+                width="80"
+                height="107"
+                alt={photo.alt}
+              />
+              <span>{photo.label}</span>
+            </a>
+          </li>
+        {/each}
+      </ul>
+    </nav>
+    <Heading level={3} size={4} id="arcada-karta">Arcada på kartan</Heading>
+    <div
+      class="arcada-map"
+      role="region"
+      aria-label="OpenStreetMap-karta över Arcada i Helsingfors"
+    >
+      <ArcadaMap />
+    </div>
+
+    <Heading level={3} size={4} id="demo-video">Demo av Myvm</Heading>
+    <video
+      class="demo-video"
+      aria-label="Demo av Myvm"
+      controls
+      playsinline
+      preload="none"
+      poster={asset('/media/report/myvm-demo-poster.webp')}
+      width="1920"
+      height="1080"
+    >
+      <source src={asset('/media/report/myvm-demo.mp4')} type="video/mp4" />
+      <track
+        kind="captions"
+        src={asset('/media/report/myvm-demo.vtt')}
+        srclang="sv"
+        label="Svenska (automatiska)"
+        default
+      />
+    </video>
+
+    <Heading level={3} size={4} id="demo-audio">Ljudspår från demon</Heading>
+    <audio class="demo-audio" aria-label="Ljudspår från Myvm-demon" controls preload="none">
+      <source src={asset('/media/report/myvm-demo.m4a')} type="audio/mp4" />
+    </audio>
+    <details class="demo-transcript">
+      <summary>Automatisk transkription</summary>
+      <Text>
+        Här är en virtuell maskin jag byggde för några år sedan, typ fem år sedan. Den innehåller...
+        Den är baserad på ett spel som heter Turing Complete.
+      </Text>
+      <Text>
+        Den implementerar en simpel virtuell maskin med olika aritmetiska och hoppinstruktioner och
+        move-instruktioner.
+      </Text>
+      <Text>
+        Här är ett exempel på ett testprogram som printar ut en emoji genom att skriva fyra olika
+        bytes till output-registret, som sen printar ut det.
+      </Text>
+    </details>
   </section>
 
   <section id="validering" aria-labelledby="validering-title">
@@ -388,8 +479,8 @@
     <Heading level={2} size={3} id="ai-title">{getTitle('ai')}</Heading>
     <Text>
       Jag har använt Codex som stöd för att utveckla sajten. Codex skrev ganska mycket av koden till
-      sajten. Jag har själv fattat alla beslut kring hur sajten ska se ut, vilka funktioner den ska ha
-      och hur den ska fungera. Jag har läst igenom och förstår koden som Codex skrev.
+      sajten. Jag har själv fattat alla beslut kring hur sajten ska se ut, vilka funktioner den ska
+      ha och hur den ska fungera. Jag har läst igenom och förstår koden som Codex skrev.
     </Text>
   </section>
 
@@ -468,6 +559,84 @@
     gap: 1rem;
     padding: 1rem;
     font-size: var(--type-size-small);
+  }
+
+  .gallery-viewer {
+    display: block;
+    width: 272px;
+    max-width: 100%;
+    height: 362px;
+    margin: 1.5rem auto 0;
+    border: 1px solid var(--theme-border-color);
+    border-radius: 0.5rem;
+    box-sizing: border-box;
+  }
+
+  .arcada-map {
+    display: block;
+    width: 100%;
+    height: clamp(18rem, 45vw, 26rem);
+    margin-block: 1.5rem 1rem;
+    isolation: isolate;
+    overflow: hidden;
+    border: 1px solid var(--theme-border-color);
+    border-radius: 0.5rem;
+    box-sizing: border-box;
+  }
+
+  .demo-video {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin-block: 1.5rem 1rem;
+    background: #000;
+    border-radius: 0.5rem;
+  }
+
+  .demo-video::cue {
+    font-family: system-ui, sans-serif;
+    font-size: clamp(0.875rem, 2vw, 1.25rem);
+  }
+
+  .demo-audio {
+    display: block;
+    width: 100%;
+    margin-block: 1.5rem 1rem;
+  }
+
+  .demo-transcript {
+    max-width: 62ch;
+    margin-block: 1rem;
+  }
+
+  .demo-transcript summary {
+    cursor: pointer;
+    margin-block-end: 1rem;
+  }
+
+  .gallery-thumbnails {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+    max-width: 17rem;
+    margin: 1rem auto 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .gallery-thumbnails a {
+    display: grid;
+    gap: 0.5rem;
+    text-align: center;
+  }
+
+  .gallery-thumbnails img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--theme-border-color);
+    border-radius: 0.375rem;
+    box-sizing: border-box;
   }
 
   .swatch {
