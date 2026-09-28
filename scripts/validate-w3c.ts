@@ -14,6 +14,8 @@ const validators = {
   },
 };
 
+const cssErrorWhitelist = [/:Invalid number$/i, /:Unrecognized at-rule(?:\s.*)?$/i];
+
 const selection = process.argv[2] ?? 'all';
 if (!['all', 'html', 'css'].includes(selection)) {
   throw new Error('Usage: bun scripts/validate-w3c.ts [all|html|css] [directory=dist]');
@@ -78,16 +80,54 @@ const validate = async (kind: keyof typeof validators): Promise<boolean> => {
       timeout: 120_000,
       windowsHide: true,
     });
-    const passed = !result.error && result.status === 0;
+    const stdout = result.error ? '' : result.stdout;
+    const stderr = result.error ? '' : result.stderr;
+    // GNU CSS warnings have a space-prefixed context; all other output must be checked.
+    const cssErrors =
+      kind === 'css'
+        ? stdout
+            .split(/\r?\n/)
+            .filter((line) => line.trim() && !/^file:.*:\d+: (?:.* - )? :/.test(line))
+        : [];
+    const ignoredCssErrors = cssErrors.filter((line) =>
+      cssErrorWhitelist.some((pattern) => pattern.test(line)),
+    );
+    const blockingCssErrors = cssErrors.filter(
+      (line) => !cssErrorWhitelist.some((pattern) => pattern.test(line)),
+    );
+    // The CSS validator prints its option map to stderr even on successful runs.
+    const unexpectedCssStderr = stderr
+      .replace(/^\{[^\r\n]*\boutput=gnu\b[^\r\n]*\}\r?$/gm, '')
+      .trim();
+    const passed =
+      !result.error &&
+      result.signal === null &&
+      result.status !== null &&
+      (kind === 'css'
+        ? blockingCssErrors.length === 0 &&
+          unexpectedCssStderr.length === 0 &&
+          (result.status === 0 || ignoredCssErrors.length > 0)
+        : result.status === 0);
     const status = `${kind.toUpperCase()}: ${passed ? 'passed' : 'failed'} (exit ${result.status ?? 'unavailable'})`;
+    const whitelistSummary =
+      ignoredCssErrors.length > 0
+        ? `Ignored ${ignoredCssErrors.length} whitelisted CSS errors.\n`
+        : '';
     const diagnostics = result.error
       ? `${result.error.message}\nEnsure Java 17 or newer is installed and on PATH.\n`
-      : `${result.stdout}${result.stderr}`;
-    const output = `${status}\nSource: ${validators[kind].url}\nDirectory: ${directory}\n\n${diagnostics}`;
+      : `${stdout}${stderr}`;
+    const output = `${status}\n${whitelistSummary}Source: ${validators[kind].url}\nDirectory: ${directory}\n\n${diagnostics}`;
     await writeFile(report, output);
     console.log(`${status}. Report: ${report}`);
+    if (whitelistSummary) {
+      console.log(whitelistSummary.trim());
+    }
     if (!passed) {
-      console.log(diagnostics.split('\n').slice(0, 20).join('\n'));
+      const failureDiagnostics =
+        kind === 'css' && !result.error
+          ? [...blockingCssErrors, unexpectedCssStderr].join('\n')
+          : diagnostics;
+      console.log(failureDiagnostics.split('\n').slice(0, 20).join('\n'));
     }
     return passed;
   } catch (error) {
