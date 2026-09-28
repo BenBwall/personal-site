@@ -38,9 +38,10 @@
   <div class="about-copy">
     <Heading level={1} id="about-title">About me</Heading>
     <Text variant="lead">
-      Hi, I'm Ben, a web developer and Information Technology student at Arcada University of
-      Applied Sciences.
+      Hi, I'm Ben, a software developer and Information Technology student at Arcada University of
+      Applied Sciences. I currently work full-time for a med-tech company called Prevalabs.
     </Text>
+    <Text>I'm developing a web application that healthcare professionals can use to use a machine-learning based algorithm to diagnose heart and kidney disease in patients.</Text>
     <Text>
       I've been programming for about seven years. Alongside my work in web development, I like to
       work on a wide array of side-projects in my freetime.

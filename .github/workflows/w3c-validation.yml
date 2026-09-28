@@ -1,0 +1,47 @@
+name: W3C validation
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: w3c-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: bun install --frozen-lockfile
+      - name: Build production site
+        id: build
+        run: bun run build
+        env:
+          BASE_PATH: /~bergenwb
+      - name: Validate HTML with the W3C Nu Html Checker
+        run: bun run validate:w3c html
+      - name: Validate CSS with the W3C CSS Validator
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: bun run validate:w3c css
+      - name: Save validation reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: w3c-reports
+          path: w3c-reports/
+          if-no-files-found: warn
+          retention-days: 14

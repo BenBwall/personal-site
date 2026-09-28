@@ -20,7 +20,7 @@
   {...attributes}
   class={['heading', className]}
   data-size={size ?? level}
-  data-tone={tone ?? (level === 1 ? 'accent' : 'primary')}
+  data-tone={tone}
 >
   {@render children()}
 </svelte:element>

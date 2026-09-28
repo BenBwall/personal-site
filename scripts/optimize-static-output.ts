@@ -1,13 +1,13 @@
-import { createHash } from 'node:crypto';
 import { readFile, readdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import type { Adapter } from '@sveltejs/kit';
 import { minify } from 'vite';
 
+import { addInitScriptHashes, prepareInlineInitScript } from '#scripts/add-init-script-hashes.ts';
+
 /** Inline first-paint scripts and authorize their exact contents in the static CSP. */
 export const inlineInitScripts = (html: string, scripts: ReadonlyMap<string, string>): string => {
-  const hashes = new Set<string>();
   const result = html.replace(
     /<script src="[^"]*\/init\/([^"]+)"><\/script>/g,
     (_tag: string, name: string) => {
@@ -15,20 +15,10 @@ export const inlineInitScripts = (html: string, scripts: ReadonlyMap<string, str
       if (source === undefined) {
         throw new Error(`Missing init script: ${name}`);
       }
-      // Escape HTML closing tags before hashing the actual script content.
-      const code = source.replace(/<\//g, '<\\/');
-      hashes.add(`'sha256-${createHash('sha256').update(code).digest('base64')}'`);
-      return `<script>${code}</script>`;
+      return `<script>${prepareInlineInitScript(source)}</script>`;
     },
   );
-  if (hashes.size === 0) {
-    return result;
-  }
-  const csp = /(<meta http-equiv="content-security-policy" content="[^"]*script-src)([^";]*)/i;
-  if (!csp.test(result)) {
-    throw new Error('Cannot authorize inline init scripts: missing script-src CSP.');
-  }
-  return result.replace(csp, `$1$2 ${[...hashes].join(' ')}`);
+  return addInitScriptHashes(result, scripts.values());
 };
 
 /** Minify static scripts, inline first-paint code, then compress the final output. */

@@ -20,6 +20,7 @@
     { label: 'Home', route: '/' },
     { label: 'Projects', route: '/projects' },
     { label: 'Resume', route: '/resume' },
+    { label: 'Rapport', route: '/rapport' },
   ] as const satisfies readonly Page[];
 
   onMount(initializeFavicon);
@@ -59,6 +60,11 @@
     color-scheme: light dark;
     color: light-dark(var(--color-700), var(--color-300));
     background-color: light-dark(var(--color-complement-50), var(--color-complement-950));
+    scroll-padding-top: 5.25rem;
+  }
+
+  :global(body) {
+    margin: 0;
   }
 
   .layout {
@@ -68,14 +74,18 @@
     grid-template-rows: auto 1fr auto;
   }
 
-  header,
+  nav,
   main {
     width: min(100% - 2rem, 70rem);
     margin-inline: auto;
   }
 
   header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
     padding-block: 1.25rem;
+    background-color: light-dark(var(--color-complement-50), var(--color-complement-950));
   }
 
   nav {

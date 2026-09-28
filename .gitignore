@@ -13,6 +13,7 @@ dist-ssr
 .svelte-kit
 .lighthouseci
 lighthouse-reports
+w3c-reports
 /static/images/generated/
 /static/init/
 *.local

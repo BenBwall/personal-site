@@ -16,7 +16,7 @@
       }
     },
     {
-      "files": ["scripts/**/*.ts", "scripts/**/*.mts", "playwright.config.ts", "tests/**/*.ts"],
+      "files": ["scripts/**/*.ts", "scripts/**/*.mts"],
       "env": {
         "node": true
       },
@@ -34,12 +34,6 @@
       "rules": {
         "import/no-unassigned-import": "off",
         "typescript/unbound-method": "off"
-      }
-    },
-    {
-      "files": ["tests/**/*.ts"],
-      "rules": {
-        "eslint/no-await-in-loop": "off"
       }
     },
     {

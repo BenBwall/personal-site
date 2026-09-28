@@ -13,7 +13,7 @@
   const seconds = $derived(elapsedSeconds % 60);
 </script>
 
-<div class="scoreboard" class:pending aria-label="Game progress">
+<div class="scoreboard" class:pending role="group" aria-label="Game progress">
   <span><strong>{minesLeft}</strong> mines left</span>
   {#if showNewGame}
     <button type="button" class="action" onclick={onnewgame}>New game</button>

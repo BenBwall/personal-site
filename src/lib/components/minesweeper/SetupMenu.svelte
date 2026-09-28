@@ -273,7 +273,6 @@
 
   .menu-panel h3 {
     margin: 0;
-    color: light-dark(var(--color-950), var(--color-50));
     font-size: 1.125rem;
     line-height: 1.25;
   }

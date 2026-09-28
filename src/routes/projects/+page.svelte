@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { asset, base } from '$app/paths';
+  import { base } from '$app/paths';
   import { Heading, Text } from '$lib/components/typography';
   import { projects } from '$lib/data/projects';
   import { siGithub } from 'simple-icons';
@@ -75,29 +75,6 @@
               decoding="async"
             />
           </picture>
-        {/if}
-        {#if project.demo}
-          <video
-            class="project-demo"
-            controls
-            muted
-            playsinline
-            preload="none"
-            src={`${base}${project.demo.src}`}
-            poster={project.demo.poster ? `${base}${project.demo.poster}` : undefined}
-            aria-label={`${project.title} demo`}
-          >
-            {#if project.demo.captions}
-              <track
-                kind="captions"
-                src={`${base}${project.demo.captions.src}`}
-                srclang={project.demo.captions.language}
-                label={project.demo.captions.label}
-                default
-              />
-            {/if}
-            <a href={asset(project.demo.src)}>Download the {project.title} demo</a>
-          </video>
         {/if}
       </article>
     {/each}
@@ -186,15 +163,6 @@
     max-width: 62ch;
   }
 
-  .project-demo {
-    display: block;
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    object-fit: contain;
-    border-radius: 0.5rem;
-    background: light-dark(var(--color-100), var(--color-900));
-  }
-
   .project-preview {
     display: block;
     width: 100%;
@@ -206,10 +174,5 @@
     width: 100%;
     height: auto;
     border-radius: 0.5rem;
-  }
-
-  .project-demo:focus-visible {
-    outline: 2px solid light-dark(var(--color-600), var(--color-300));
-    outline-offset: 3px;
   }
 </style>

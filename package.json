@@ -15,7 +15,7 @@
     "analyze": "fallow --fail-on-issues",
     "lint": "oxlint --max-warnings 0",
     "lighthouse": "lhci autorun",
-    "test:lint": "bun test tests/lint",
+    "validate:w3c": "bun scripts/validate-w3c.ts",
     "fmt": "oxfmt",
     "generate:resume-pdf": "bun scripts/generate-resume-pdf.ts"
   },

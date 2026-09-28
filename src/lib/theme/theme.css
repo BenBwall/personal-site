@@ -62,9 +62,10 @@
 }
 
 :root {
+  --theme-heading-hue-offset: 90;
   --theme-accent-color: light-dark(
-    oklch(from var(--color-700) l c calc(h + 90)),
-    oklch(from var(--color-300) l c calc(h + 90))
+    oklch(from var(--color-700) l c calc(h + var(--theme-heading-hue-offset))),
+    oklch(from var(--color-300) l c calc(h + var(--theme-heading-hue-offset)))
   );
   --theme-border-color: light-dark(var(--color-200), var(--color-800));
   --disabled-opacity: 0.45;
@@ -183,6 +184,43 @@
   --color-offset-210-800: oklch(from var(--color-800) l c calc(h + 210));
   --color-offset-210-900: oklch(from var(--color-900) l c calc(h + 210));
   --color-offset-210-950: oklch(from var(--color-950) l c calc(h + 210));
+}
+
+/* Six equal hue steps connect the h1 accent to body text; keep the same lightness and chroma. */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: oklch(
+    from var(--theme-accent-color) l c
+      calc(h - (var(--heading-level) - 1) * var(--theme-heading-hue-offset) / 6)
+  );
+}
+
+h1 {
+  --heading-level: 1;
+}
+
+h2 {
+  --heading-level: 2;
+}
+
+h3 {
+  --heading-level: 3;
+}
+
+h4 {
+  --heading-level: 4;
+}
+
+h5 {
+  --heading-level: 5;
+}
+
+h6 {
+  --heading-level: 6;
 }
 
 :root[data-reduced-motion='true'] {

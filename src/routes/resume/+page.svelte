@@ -1,6 +1,7 @@
 <script lang="ts">
   import { asset } from '$app/paths';
   import { Heading, Text } from '$lib/components/typography';
+  import { siGithub } from 'simple-icons';
 
   const cvPdf = asset('/ben-bergenwall-cv.pdf');
 </script>
@@ -18,7 +19,11 @@
     <Heading level={1}>Ben Bergenwall</Heading>
     <Text variant="lead">Software Developer<span>, Espoo, Finland</span></Text>
     <nav class="resume-links" aria-label="Resume links">
-      <a href="https://github.com/BenBwall">GitHub</a>
+      <a class="github-link" href="https://github.com/BenBwall" aria-label="GitHub" title="GitHub">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d={siGithub.path} />
+        </svg>
+      </a>
       <a href={cvPdf} target="_blank" rel="noopener" type="application/pdf">View PDF</a>
       <a href={cvPdf} download="Ben-Bergenwall-CV.pdf" type="application/pdf">Download PDF</a>
     </nav>
@@ -173,6 +178,7 @@
   .resume-links {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: 0.5rem 1.5rem;
     margin-top: 1.25rem;
   }
@@ -190,6 +196,14 @@
   .resume-links a:focus-visible {
     outline: 2px solid light-dark(var(--color-600), var(--color-300));
     outline-offset: 3px;
+  }
+
+  .github-link svg {
+    display: block;
+    width: 24px;
+    height: 24px;
+    /* GitHub branding is an intentional exception to the theme palette. */
+    fill: light-dark(#000, #fff);
   }
 
   section {
