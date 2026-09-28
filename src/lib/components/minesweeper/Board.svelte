@@ -56,8 +56,8 @@
   let touchHold: { pointerId: number; startX: number; startY: number; timer: number } | undefined;
   let suppressTouchClick = false;
   const gameEnded = $derived(game.phase === 'won' || game.phase === 'lost');
-  const minBoardWidthPx = $derived(
-    game.config.columns * 32 + Math.max(32, String(game.config.rows).length * 12),
+  const minBoardWidthRem = $derived(
+    game.config.columns * 2 + Math.max(2, String(game.config.rows).length * 0.75),
   );
   $effect(() => {
     if (storageReady && boardScrollElement && scrollToRestore) {
@@ -281,7 +281,7 @@
     role="group"
     aria-label={`Minesweeper board, ${game.config.rows} rows and ${game.config.columns} columns${game.phase === 'won' ? ', won' : ''}`}
     style:grid-template-columns={`minmax(2rem, max-content) repeat(${game.config.columns}, minmax(0, 1fr))`}
-    style:min-width={`${minBoardWidthPx}px`}
+    style:min-width={`${minBoardWidthRem}rem`}
   >
     <span class="board-corner" aria-hidden="true">{game.phase === 'won' ? '✓' : ''}</span>
     {#each Array.from({ length: game.config.columns }, (_, index) => index) as column (column)}
@@ -371,10 +371,10 @@
     --board-surface: light-dark(var(--color-200), var(--color-800));
 
     display: grid;
-    gap: 3px;
+    gap: 0.1875rem;
     width: 100%;
     box-sizing: border-box;
-    padding: 3px;
+    padding: 0.1875rem;
     border: 1px solid var(--theme-border-color);
     border-radius: 0.5rem;
     background: var(--board-surface);

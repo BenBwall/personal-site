@@ -3,6 +3,7 @@
   import ArcadaMap from '$lib/components/ArcadaMap.svelte';
   import Details from '$lib/components/Details.svelte';
   import { Heading, Text } from '$lib/components/typography';
+  import { thumbnailSizes } from '$lib/layout/image-sizes';
 
   const galleryPhotos = [
     { alt: 'Jag i kavaj och slips inför en sitz.', id: 'portrait', label: 'Kavaj och slips' },
@@ -149,6 +150,11 @@
       på en stationär eller bärbar dator. Jag har också testat den på min telefon (iPhone 13). Den
       fungerar bra på telefonen, men layouten känns lite trång ibland.
     </Text>
+    <Text>
+      Innehållet har en maxbredd på 70rem och ligger centrerat även på väldigt breda skärmar. Texten
+      får därför inte längre rader bara för att skärmen har fler pixlar. Storlekarna i rem följer
+      också webbläsarens inställning för textstorlek.
+    </Text>
     <Text>Faviconen är en egen SVG med bokstaven b och transparenta hörn.</Text>
   </section>
 
@@ -176,16 +182,23 @@
       class="gallery-viewer"
       name="en_bildram"
       title="Bildgalleri med bilder från när jag klädde upp mig inför en sitz"
-      src={asset('/images/generated/gallery/portrait-full.webp')}
+      src={asset('/images/generated/gallery/portrait.html')}
       loading="lazy"
     ></iframe>
     <nav aria-label="Välj en bild från sitzen">
       <ul class="gallery-thumbnails">
         {#each galleryPhotos as photo (photo.id)}
           <li>
-            <a href={asset(`/images/generated/gallery/${photo.id}-full.webp`)} target="en_bildram">
+            <a href={asset(`/images/generated/gallery/${photo.id}.html`)} target="en_bildram">
               <img
-                src={asset(`/images/generated/gallery/${photo.id}-thumbnail.webp`)}
+                src={asset(`/images/generated/gallery/${photo.id}-thumbnail-80.webp`)}
+                srcset={[80, 160, 240, 320, 480, 640]
+                  .map(
+                    (width) =>
+                      `${asset(`/images/generated/gallery/${photo.id}-thumbnail-${width}.webp`)} ${width}w`,
+                  )
+                  .join(', ')}
+                sizes={thumbnailSizes}
                 width="80"
                 height="107"
                 alt={photo.alt}
@@ -265,6 +278,10 @@
       Actions finns en kontroll som kör dem på alla byggda HTML- och CSS-filer, inklusive rapporten.
       CSS-validatorn ger fortfarande fel för vissa moderna CSS-funktioner i temat, till exempel
       <code>@property</code> och <code>light-dark()</code>, som den inte har fullständigt stöd för.
+    </Text>
+    <Heading level={3} size={4}>4K och större skärmar</Heading>
+    <Text>
+      Storleken på texten och bilderna ändras med skärmskalning för att passa in i större skärmar.
     </Text>
   </section>
 
@@ -567,9 +584,9 @@
 
   .gallery-viewer {
     display: block;
-    width: 272px;
+    width: calc(16.875rem + 2px);
     max-width: 100%;
-    height: 362px;
+    height: calc(22.5rem + 2px);
     margin: 1.5rem auto 0;
     border: 1px solid var(--theme-border-color);
     border-radius: 0.5rem;

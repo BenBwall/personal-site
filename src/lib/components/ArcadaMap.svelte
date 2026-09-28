@@ -76,6 +76,18 @@
   .map {
     width: 100%;
     height: 100%;
+    font-size: 0.75rem;
+  }
+
+  .map :global(.leaflet-control-zoom a) {
+    width: 1.875rem;
+    height: 1.875rem;
+    font-size: 1.375rem;
+    line-height: 1.875rem;
+  }
+
+  .map :global(.leaflet-control-attribution) {
+    font-size: 0.6875rem;
   }
 
   p {

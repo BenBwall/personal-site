@@ -200,8 +200,8 @@
 
   .github-link svg {
     display: block;
-    width: 24px;
-    height: 24px;
+    width: 1.5rem;
+    height: 1.5rem;
     /* GitHub branding is an intentional exception to the theme palette. */
     fill: light-dark(#000, #fff);
   }

@@ -13,10 +13,10 @@
   onclick={toggleColorScheme}
 >
   <span class="icon sun" aria-hidden="true">
-    <Sun size={20} />
+    <Sun size="1.25rem" />
   </span>
   <span class="icon moon" aria-hidden="true">
-    <Moon size={20} />
+    <Moon size="1.25rem" />
   </span>
 </button>
 

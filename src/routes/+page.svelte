@@ -2,13 +2,13 @@
   import { asset } from '$app/paths';
   import Minesweeper from '$lib/components/Minesweeper.svelte';
   import { Heading, Text } from '$lib/components/typography';
+  import { photoSizes } from '$lib/layout/image-sizes';
 
-  const photoWidths = [320, 480, 640, 960] as const;
+  const photoWidths = [320, 480, 640, 960, 1200] as const;
   const photos = [
     { alt: 'Me sitting outdoors by the sea', name: 'sitting-outdoors-by-the-sea' },
     { alt: 'Me standing on a cliff on the beach', name: 'standing-on-a-cliff-on-the-beach' },
   ] as const;
-  const photoSizes = '(max-width: 35rem) calc(50vw - 2rem), 250px';
 
   const photoSources = (name: (typeof photos)[number]['name'], format: 'avif' | 'webp') =>
     photoWidths
@@ -41,7 +41,10 @@
       Hi, I'm Ben, a software developer and Information Technology student at Arcada University of
       Applied Sciences. I currently work full-time for a med-tech company called Prevalabs.
     </Text>
-    <Text>I'm developing a web application that healthcare professionals can use to use a machine-learning based algorithm to diagnose heart and kidney disease in patients.</Text>
+    <Text
+      >I'm developing a web application that healthcare professionals can use to use a
+      machine-learning based algorithm to diagnose heart and kidney disease in patients.</Text
+    >
     <Text>
       I've been programming for about seven years. Alongside my work in web development, I like to
       work on a wide array of side-projects in my freetime.

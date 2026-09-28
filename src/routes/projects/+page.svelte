@@ -2,12 +2,13 @@
   import { base } from '$app/paths';
   import { Heading, Text } from '$lib/components/typography';
   import { projects } from '$lib/data/projects';
+  import { previewSizes } from '$lib/layout/image-sizes';
   import { siGithub } from 'simple-icons';
 
   const previewWidths = [320, 400, 480, 640, 800, 960];
-  const previewSizes = '(max-width: 39rem) calc(100vw - 3rem), 36rem';
-  const previewSources = (name: string, format: 'avif' | 'webp') =>
-    previewWidths
+  const previewSources = (name: string, format: 'avif' | 'webp', sourceWidth: number) =>
+    [...new Set([...previewWidths, Math.min(sourceWidth, 1200)])]
+      .filter((width) => width <= sourceWidth)
       .map((width) => `${base}/images/generated/${name}-${width}.${format} ${width}w`)
       .join(', ');
 </script>
@@ -60,12 +61,12 @@
           <picture class="project-preview">
             <source
               type="image/avif"
-              srcset={previewSources(project.preview.name, 'avif')}
+              srcset={previewSources(project.preview.name, 'avif', project.preview.width)}
               sizes={previewSizes}
             />
             <img
               src={`${base}/images/generated/${project.preview.name}-640.webp`}
-              srcset={previewSources(project.preview.name, 'webp')}
+              srcset={previewSources(project.preview.name, 'webp', project.preview.width)}
               sizes={previewSizes}
               alt={project.preview.alt}
               width={project.preview.width}
@@ -127,8 +128,8 @@
 
   .github-link svg {
     display: block;
-    width: 24px;
-    height: 24px;
+    width: 1.5rem;
+    height: 1.5rem;
     /* GitHub branding is an intentional exception to the theme palette. */
     fill: light-dark(#000, #fff);
   }

@@ -71,7 +71,7 @@
   aria-expanded={isOpen}
   onclick={openDialog}
 >
-  <Palette size={20} aria-hidden="true" />
+  <Palette size="1.25rem" aria-hidden="true" />
 </button>
 
 <dialog

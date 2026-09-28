@@ -67,6 +67,14 @@
     margin: 0;
   }
 
+  @media screen {
+    :global(html) {
+      /* Grow the rem-based interface beyond Full HD, limited by the shorter axis.
+         Percentages retain the user's default text size; print keeps its normal scale. */
+      font-size: clamp(100%, calc(100% + min((100vw - 1920px) / 160, (100vh - 1080px) / 90)), 400%);
+    }
+  }
+
   .layout {
     display: grid;
     min-height: 100vh;
