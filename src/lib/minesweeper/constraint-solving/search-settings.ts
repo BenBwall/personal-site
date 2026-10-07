@@ -1,4 +1,4 @@
-import { z } from '$lib/validation';
+import { z } from '#lib/validation.js';
 
 export const DEFAULT_SEARCH_SETTINGS = {
   maxRandomAttempts: 1000,

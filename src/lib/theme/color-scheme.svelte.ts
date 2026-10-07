@@ -1,5 +1,6 @@
-import { type ColorScheme, parseColorScheme } from '$lib/theme/parsing';
 import { on } from 'svelte/events';
+
+import { type ColorScheme, parseColorScheme } from '#lib/theme/parsing.js';
 
 export const colorScheme = $state<{ current: ColorScheme }>({
   current: 'light',

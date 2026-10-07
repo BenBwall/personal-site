@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { HTMLInputAttributes } from 'svelte/elements';
-  import InputField from '$inputs/InputField.svelte';
+
+  import InputField from '#inputs/InputField.svelte';
 
   type Props = Omit<HTMLInputAttributes, 'type' | 'checked' | 'onchange'> & {
     label: string;

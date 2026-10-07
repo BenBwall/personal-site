@@ -1,8 +1,8 @@
 import {
   type PlayableHint,
   findPlayableHints,
-} from '$lib/minesweeper/constraint-solving/generate-hints';
-import type { Game } from '$lib/minesweeper/game';
+} from '#lib/minesweeper/constraint-solving/generate-hints.js';
+import type { Game } from '#lib/minesweeper/game.js';
 
 export type FlagCheckMode = 'board' | 'proof';
 export type CheckedFlag = {

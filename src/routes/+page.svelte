@@ -1,8 +1,10 @@
 <script lang="ts">
   import { asset } from '$app/paths';
-  import Minesweeper from '$lib/components/Minesweeper.svelte';
-  import { Heading, Text } from '$lib/components/typography';
-  import { photoSizes } from '$lib/layout/image-sizes';
+
+  import Minesweeper from '#lib/components/Minesweeper.svelte';
+  import { Heading, Text } from '#lib/components/typography/index.js';
+  import { generatedAssetPath } from '#lib/generated-asset.js';
+  import { photoSizes } from '#lib/layout/image-sizes.js';
 
   const photoWidths = [320, 480, 640, 960, 1200] as const;
   const photos = [
@@ -12,7 +14,10 @@
 
   const photoSources = (name: (typeof photos)[number]['name'], format: 'avif' | 'webp') =>
     photoWidths
-      .map((width) => `${asset(`/images/generated/${name}-${width}.${format}`)} ${width}w`)
+      .map(
+        (width) =>
+          `${asset(generatedAssetPath(`images/generated/${name}-${width}.${format}`))} ${width}w`,
+      )
       .join(', ');
 </script>
 
@@ -57,7 +62,7 @@
         <picture>
           <source type="image/avif" srcset={photoSources(photo.name, 'avif')} sizes={photoSizes} />
           <img
-            src={asset(`/images/generated/${photo.name}-640.webp`)}
+            src={asset(generatedAssetPath(`images/generated/${photo.name}-640.webp`))}
             srcset={photoSources(photo.name, 'webp')}
             sizes={photoSizes}
             alt={photo.alt}

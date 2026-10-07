@@ -1,4 +1,4 @@
-import { parseColorScheme, parsePreferences, parseThemeChannels } from '$lib/theme/parsing';
+import { parseColorScheme, parsePreferences, parseThemeChannels } from '#lib/theme/parsing.js';
 
 const readThemeInitSaved = (key: string): unknown => {
   try {

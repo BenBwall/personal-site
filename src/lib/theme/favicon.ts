@@ -1,5 +1,6 @@
-import source from '$lib/theme/favicon.svg?raw';
 import { on } from 'svelte/events';
+
+import source from '#lib/theme/favicon.svg?raw';
 
 const colorVariable = /var\((--[\w-]+)\)/g;
 const animationIntervalMs = 100;

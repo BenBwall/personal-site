@@ -1,14 +1,15 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+  import { on } from 'svelte/events';
+
   import {
     HINT_ROLE_LABELS,
     type HintRole,
     columnLabel,
     coordinateLabel,
     positionLabel,
-  } from '$lib/components/minesweeper/presentation';
-  import type { Cell, Game } from '$lib/minesweeper/game';
-  import { onMount } from 'svelte';
-  import { on } from 'svelte/events';
+  } from '#lib/components/minesweeper/presentation.js';
+  import type { Cell, Game } from '#lib/minesweeper/game.js';
   type Props = {
     game: Game;
     menuOpen: boolean;

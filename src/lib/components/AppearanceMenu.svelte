@@ -1,19 +1,20 @@
 <script lang="ts">
-  import { browser } from '$app/environment';
-  import ColorSchemeToggle from '$components/ColorSchemeToggle.svelte';
-  import RainbowSettings from '$components/RainbowSettings.svelte';
-  import CheckboxInput from '$inputs/CheckboxInput.svelte';
-  import InputField from '$inputs/InputField.svelte';
-  import RangeInput from '$inputs/RangeInput.svelte';
-  import { preferences, setPreference } from '$lib/theme/preferences.svelte';
+  import { browser } from '$app/env';
+  import { Palette } from '@lucide/svelte';
+
+  import ColorSchemeToggle from '#components/ColorSchemeToggle.svelte';
+  import RainbowSettings from '#components/RainbowSettings.svelte';
+  import CheckboxInput from '#inputs/CheckboxInput.svelte';
+  import InputField from '#inputs/InputField.svelte';
+  import RangeInput from '#inputs/RangeInput.svelte';
+  import { preferences, setPreference } from '#lib/theme/preferences.svelte.js';
   import {
     defaultTheme,
     fullHueRotation,
     getCurrentTheme,
     maxChroma,
     setTheme,
-  } from '$lib/theme/theme';
-  import { Palette } from '@lucide/svelte';
+  } from '#lib/theme/theme.js';
 
   let dialog: HTMLDialogElement;
   let isOpen = $state(false);

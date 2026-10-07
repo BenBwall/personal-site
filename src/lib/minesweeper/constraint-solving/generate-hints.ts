@@ -7,9 +7,9 @@ import {
   constraintComponents,
   enumerateForced,
   unknownCells,
-} from '$lib/minesweeper/constraint-solving/core';
-import type { Game } from '$lib/minesweeper/game';
-import { neighborsOf } from '$lib/minesweeper/neighbors';
+} from '#lib/minesweeper/constraint-solving/core.js';
+import type { Game } from '#lib/minesweeper/game.js';
+import { neighborsOf } from '#lib/minesweeper/neighbors.js';
 
 type HintReason =
   | {

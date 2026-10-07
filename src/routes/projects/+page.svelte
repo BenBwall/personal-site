@@ -1,15 +1,20 @@
 <script lang="ts">
-  import { base } from '$app/paths';
-  import { Heading, Text } from '$lib/components/typography';
-  import { projects } from '$lib/data/projects';
-  import { previewSizes } from '$lib/layout/image-sizes';
+  import { asset } from '$app/paths';
   import { siGithub } from 'simple-icons';
+
+  import { Heading, Text } from '#lib/components/typography/index.js';
+  import { projects } from '#lib/data/projects.js';
+  import { generatedAssetPath } from '#lib/generated-asset.js';
+  import { previewSizes } from '#lib/layout/image-sizes.js';
 
   const previewWidths = [320, 400, 480, 640, 800, 960];
   const previewSources = (name: string, format: 'avif' | 'webp', sourceWidth: number) =>
     [...new Set([...previewWidths, Math.min(sourceWidth, 1200)])]
       .filter((width) => width <= sourceWidth)
-      .map((width) => `${base}/images/generated/${name}-${width}.${format} ${width}w`)
+      .map(
+        (width) =>
+          `${asset(generatedAssetPath(`images/generated/${name}-${width}.${format}`))} ${width}w`,
+      )
       .join(', ');
 </script>
 
@@ -65,7 +70,7 @@
               sizes={previewSizes}
             />
             <img
-              src={`${base}/images/generated/${project.preview.name}-640.webp`}
+              src={asset(generatedAssetPath(`images/generated/${project.preview.name}-640.webp`))}
               srcset={previewSources(project.preview.name, 'webp', project.preview.width)}
               sizes={previewSizes}
               alt={project.preview.alt}

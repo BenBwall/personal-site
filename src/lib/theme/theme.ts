@@ -1,8 +1,8 @@
-import { fullHueRotation, maxChroma } from '$lib/theme/parsing';
-import { themeChannelsSchema } from '$lib/theme/schemas';
-import { z } from '$lib/validation';
+import { fullHueRotation, maxChroma } from '#lib/theme/parsing.js';
+import { themeChannelsSchema } from '#lib/theme/schemas.js';
+import { z } from '#lib/validation.js';
 
-export { fullHueRotation, maxChroma } from '$lib/theme/parsing';
+export { fullHueRotation, maxChroma } from '#lib/theme/parsing.js';
 export const maxRainbowIntervalMs = 2_147_483_647;
 
 const themeSchema = z.object({

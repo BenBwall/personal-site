@@ -1,18 +1,18 @@
 <script lang="ts">
-  import Details from '$lib/components/Details.svelte';
-  import HintCoordinate from '$lib/components/minesweeper/HintCoordinate.svelte';
-  import HintExplanation from '$lib/components/minesweeper/HintExplanation.svelte';
+  import Details from '#lib/components/Details.svelte';
+  import HintCoordinate from '#lib/components/minesweeper/HintCoordinate.svelte';
+  import HintExplanation from '#lib/components/minesweeper/HintExplanation.svelte';
   import {
     type HintRole,
     countLabel,
     positionLabel,
-  } from '$lib/components/minesweeper/presentation';
-  import type { FlagCheck, FlagCheckMode } from '$lib/minesweeper/check-flags';
+  } from '#lib/components/minesweeper/presentation.js';
+  import type { FlagCheck, FlagCheckMode } from '#lib/minesweeper/check-flags.js';
   import {
     type PlayableHint,
     hintProofSteps,
-  } from '$lib/minesweeper/constraint-solving/generate-hints';
-  import type { Game } from '$lib/minesweeper/game';
+  } from '#lib/minesweeper/constraint-solving/generate-hints.js';
+  import type { Game } from '#lib/minesweeper/game.js';
   type Props = {
     game: Game;
     hints: PlayableHint[] | null;

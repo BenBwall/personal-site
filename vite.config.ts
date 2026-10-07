@@ -1,10 +1,20 @@
+import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 import { defineConfig } from 'vite';
+import { z } from 'zod';
 
 import { generateFavicon } from '#scripts/generate-favicon.ts';
 import { generateGallery } from '#scripts/generate-gallery.ts';
 import { generateImages } from '#scripts/generate-images.ts';
 import { generateInitScripts } from '#scripts/generate-init-scripts.ts';
+import { optimizeStaticOutput } from '#scripts/optimize-static-output.ts';
+
+const basePathSchema = z.union([z.literal(''), z.templateLiteral(['/', z.string()])]);
+const basePath = basePathSchema.safeParse(process.env.BASE_PATH ?? '');
+if (!basePath.success) {
+  throw new Error('BASE_PATH must begin with a slash.');
+}
 
 export default defineConfig(({ command }) => ({
   build: {
@@ -38,7 +48,29 @@ export default defineConfig(({ command }) => ({
       enforce: 'pre',
       name: 'generate-images',
     },
-    sveltekit(),
+    sveltekit({
+      adapter: optimizeStaticOutput(
+        adapter({
+          assets: 'dist',
+          pages: 'dist',
+        }),
+        'dist',
+      ),
+      csp: {
+        directives: {
+          'base-uri': ['self'],
+          'object-src': ['none'],
+          'script-src': ['self'],
+        },
+        mode: 'hash',
+      },
+      // These small stylesheets are cheaper to include in the first response.
+      inlineStyleThreshold: 20_000,
+      paths: {
+        base: basePath.data,
+      },
+      preprocess: vitePreprocess(),
+    }),
   ],
   ssr: {
     noExternal: ['@lucide/svelte'],

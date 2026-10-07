@@ -1,4 +1,4 @@
-import type { GameConfig } from '$lib/minesweeper/game';
+import type { GameConfig } from '#lib/minesweeper/game.js';
 
 const COLUMN_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 export type HintRole =

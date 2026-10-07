@@ -22,7 +22,7 @@
     "zones": [
       { "name": "app", "patterns": ["src/**"] },
       { "name": "scripts", "patterns": ["scripts/**"] },
-      { "name": "tooling", "patterns": ["*.ts", "*.js", "*.mjs"] },
+      { "name": "tooling", "patterns": ["*.ts", "*.js", "*.mjs", "*.cjs"] },
     ],
     "rules": [
       { "from": "app", "allow": [] },

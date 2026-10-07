@@ -1,5 +1,5 @@
-import { fullHueRotation, isValidThemeChannel, maxChroma } from '$lib/theme/parsing';
-import { z } from '$lib/validation';
+import { fullHueRotation, isValidThemeChannel, maxChroma } from '#lib/theme/parsing.js';
+import { z } from '#lib/validation.js';
 
 export const themeChannelsSchema = z.object({
   chroma: z.custom<number>((value) => isValidThemeChannel(value, maxChroma)),

@@ -1,6 +1,6 @@
-import { placeMines } from '$lib/minesweeper/constraint-solving/find-solvable-games';
-import type { SearchProgress } from '$lib/minesweeper/constraint-solving/search-settings';
-import { type Game, revealCell } from '$lib/minesweeper/game';
+import { placeMines } from '#lib/minesweeper/constraint-solving/find-solvable-games.js';
+import type { SearchProgress } from '#lib/minesweeper/constraint-solving/search-settings.js';
+import { type Game, revealCell } from '#lib/minesweeper/game.js';
 
 export type SearchRequest = { game: Game; index: number };
 export type SearchResponse =

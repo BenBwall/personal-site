@@ -1,10 +1,11 @@
-import { type Preferences, parsePreferences } from '$lib/theme/parsing';
 import { on } from 'svelte/events';
+
+import { type Preferences, parsePreferences } from '#lib/theme/parsing.js';
 
 const storageKey = 'appearance-preferences';
 const reducedMotionQuery = '(prefers-reduced-motion: reduce)';
 
-export type { Preferences } from '$lib/theme/parsing';
+export type { Preferences } from '#lib/theme/parsing.js';
 
 export const preferences = $state<Preferences>({
   reducedMotion: false,

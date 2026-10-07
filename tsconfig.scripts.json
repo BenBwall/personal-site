@@ -4,5 +4,5 @@
     "allowImportingTsExtensions": true,
     "types": ["node"]
   },
-  "include": ["scripts/**/*.ts", "svelte.config.ts"]
+  "include": ["scripts/**/*.ts", "vite.config.ts"]
 }

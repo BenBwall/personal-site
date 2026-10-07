@@ -1,7 +1,8 @@
 <script lang="ts">
-  import InputField from '$inputs/InputField.svelte';
-  import { z } from '$lib/validation';
   import type { HTMLInputAttributes } from 'svelte/elements';
+
+  import InputField from '#inputs/InputField.svelte';
+  import { z } from '#lib/validation.js';
 
   // Validates non-negative integers; invalid drafts never update the bound value.
   type Props = Omit<

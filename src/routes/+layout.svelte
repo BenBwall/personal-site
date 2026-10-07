@@ -1,26 +1,29 @@
 <script lang="ts">
   import { asset, resolve } from '$app/paths';
   import { page } from '$app/state';
-  import type { RouteId } from '$app/types';
-  import AppearanceMenu from '$lib/components/AppearanceMenu.svelte';
-  import { initializeFavicon } from '$lib/theme/favicon';
-  import defaultFavicon from '$lib/theme/favicon-default.svg?raw';
-
-  import '$lib/theme/theme.css';
+  import type { Path, RouteId } from '$app/types';
   import { type Snippet, onMount } from 'svelte';
+
+  import AppearanceMenu from '#lib/components/AppearanceMenu.svelte';
+  import { generatedAssetPath } from '#lib/generated-asset.js';
+
+  import '#lib/theme/theme.css';
+  import defaultFavicon from '#lib/theme/favicon-default.svg?raw';
+  import { initializeFavicon } from '#lib/theme/favicon.js';
 
   type Page = {
     label: string;
+    path: Path;
     route: RouteId;
   };
 
   let { children }: { children: Snippet } = $props();
 
   const pages = [
-    { label: 'Home', route: '/' },
-    { label: 'Projects', route: '/projects' },
-    { label: 'Resume', route: '/resume' },
-    { label: 'Rapport', route: '/rapport' },
+    { label: 'Home', path: '/', route: '/' },
+    { label: 'Projects', path: 'projects/', route: '/projects' },
+    { label: 'Resume', path: 'resume/', route: '/resume' },
+    { label: 'Rapport', path: 'rapport/', route: '/rapport' },
   ] as const satisfies readonly Page[];
 
   onMount(initializeFavicon);
@@ -30,18 +33,15 @@
 
 <svelte:head>
   <link id="site-favicon" rel="icon" type="image/svg+xml" href={initialFavicon} />
-  <script src={asset('/init/lib/theme/theme.js')}></script>
+  <script src={asset(generatedAssetPath('init/lib/theme/theme.js'))}></script>
 </svelte:head>
 
 <div class="layout">
   <header>
     <nav aria-label="Primary navigation">
       <div class="nav-links">
-        {#each pages as { label, route } (route)}
-          <a
-            href={resolve(route === '/' ? route : `${route}/`)}
-            aria-current={page.route.id === route ? 'page' : undefined}
-          >
+        {#each pages as { label, path, route } (route)}
+          <a href={resolve(path)} aria-current={page.route.id === route ? 'page' : undefined}>
             {label}
           </a>
         {/each}

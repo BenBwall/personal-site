@@ -1,8 +1,8 @@
 <script lang="ts">
-  import CheckboxInput from '$inputs/CheckboxInput.svelte';
-  import IntegerInput from '$inputs/IntegerInput.svelte';
-  import Details from '$lib/components/Details.svelte';
-  import type { SearchSettings } from '$lib/minesweeper/constraint-solving/search-settings';
+  import CheckboxInput from '#inputs/CheckboxInput.svelte';
+  import IntegerInput from '#inputs/IntegerInput.svelte';
+  import Details from '#lib/components/Details.svelte';
+  import type { SearchSettings } from '#lib/minesweeper/constraint-solving/search-settings.js';
   import {
     BOARD_SIZES,
     type Difficulty,
@@ -12,7 +12,7 @@
     gameConfigSchema,
     maxMineCount,
     minesForDifficulty,
-  } from '$lib/minesweeper/game';
+  } from '#lib/minesweeper/game.js';
   type Props = {
     difficulty: Difficulty | null;
     setupRows: number;

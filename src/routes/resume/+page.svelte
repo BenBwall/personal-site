@@ -1,9 +1,10 @@
 <script lang="ts">
   import { asset } from '$app/paths';
-  import { Heading, Text } from '$lib/components/typography';
   import { siGithub } from 'simple-icons';
 
-  const cvPdf = asset('/ben-bergenwall-cv.pdf');
+  import { Heading, Text } from '#lib/components/typography/index.js';
+
+  const cvPdf = asset('ben-bergenwall-cv.pdf');
 </script>
 
 <svelte:head>

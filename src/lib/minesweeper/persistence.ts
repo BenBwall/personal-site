@@ -1,5 +1,5 @@
-import { gameConfigSchema } from '$lib/minesweeper/game';
-import { z } from '$lib/validation';
+import { gameConfigSchema } from '#lib/minesweeper/game.js';
+import { z } from '#lib/validation.js';
 
 export const GAME_STORAGE_KEY = 'personal-site:minesweeper';
 const GAME_STATE_MAX_AGE_MS = 48 * 60 * 60 * 1000;

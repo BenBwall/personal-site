@@ -285,7 +285,7 @@
         "patterns": [
           {
             "regex": "^\\.{1,2}([/\\\\]|$)",
-            "message": "Use a path alias instead of a relative import. App aliases are defined in svelte.config.ts; Node aliases are defined in package.json imports."
+            "message": "Use a subpath import instead of a relative import. Subpath imports are defined in package.json imports."
           }
         ]
       }

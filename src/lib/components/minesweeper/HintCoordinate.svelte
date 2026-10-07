@@ -3,8 +3,8 @@
     type HintRole,
     coordinateLabel,
     positionLabel,
-  } from '$lib/components/minesweeper/presentation';
-  import type { GameConfig } from '$lib/minesweeper/game';
+  } from '#lib/components/minesweeper/presentation.js';
+  import type { GameConfig } from '#lib/minesweeper/game.js';
   type Props = { index: number; role: HintRole; config: GameConfig };
   let { index, role, config }: Props = $props();
 </script>

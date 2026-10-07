@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { SearchProgress } from '$lib/minesweeper/constraint-solving/search-settings';
-  import type { GameConfig } from '$lib/minesweeper/game';
+  import type { SearchProgress } from '#lib/minesweeper/constraint-solving/search-settings.js';
+  import type { GameConfig } from '#lib/minesweeper/game.js';
   type Props = {
     config: GameConfig;
     searchProgress: SearchProgress | null;

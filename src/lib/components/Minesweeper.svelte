@@ -1,30 +1,34 @@
 <script lang="ts">
-  import Board from '$lib/components/minesweeper/Board.svelte';
-  import HintPanel from '$lib/components/minesweeper/HintPanel.svelte';
+  import { onMount, untrack } from 'svelte';
+  import { on } from 'svelte/events';
+  import { SvelteMap } from 'svelte/reactivity';
+
+  import Board from '#lib/components/minesweeper/Board.svelte';
+  import HintPanel from '#lib/components/minesweeper/HintPanel.svelte';
   import {
     HINT_ROLE_LABELS,
     HINT_ROLE_ORDER,
     type HintRole,
-  } from '$lib/components/minesweeper/presentation';
-  import ResultOverlay from '$lib/components/minesweeper/ResultOverlay.svelte';
-  import Scoreboard from '$lib/components/minesweeper/Scoreboard.svelte';
-  import SearchOverlay from '$lib/components/minesweeper/SearchOverlay.svelte';
-  import SetupMenu from '$lib/components/minesweeper/SetupMenu.svelte';
+  } from '#lib/components/minesweeper/presentation.js';
+  import ResultOverlay from '#lib/components/minesweeper/ResultOverlay.svelte';
 
-  import '$lib/components/minesweeper/shared.css';
-  import { Heading } from '$lib/components/typography';
-  import { type FlagCheck, type FlagCheckMode, checkFlags } from '$lib/minesweeper/check-flags';
+  import '#lib/components/minesweeper/shared.css';
+  import Scoreboard from '#lib/components/minesweeper/Scoreboard.svelte';
+  import SearchOverlay from '#lib/components/minesweeper/SearchOverlay.svelte';
+  import SetupMenu from '#lib/components/minesweeper/SetupMenu.svelte';
+  import { Heading } from '#lib/components/typography/index.js';
+  import { type FlagCheck, type FlagCheckMode, checkFlags } from '#lib/minesweeper/check-flags.js';
   import {
     type PlayableHint,
     findPlayableHints,
     hintProofSteps,
-  } from '$lib/minesweeper/constraint-solving/generate-hints';
-  import { startSolvableGameSearch } from '$lib/minesweeper/constraint-solving/search-client';
+  } from '#lib/minesweeper/constraint-solving/generate-hints.js';
+  import { startSolvableGameSearch } from '#lib/minesweeper/constraint-solving/search-client.js';
   import {
     DEFAULT_SEARCH_SETTINGS,
     type SearchProgress,
     type SearchSettings,
-  } from '$lib/minesweeper/constraint-solving/search-settings';
+  } from '#lib/minesweeper/constraint-solving/search-settings.js';
   import {
     BOARD_SIZES,
     type Difficulty,
@@ -36,17 +40,14 @@
     revealAdjacentCells,
     revealCell,
     toggleFlag,
-  } from '$lib/minesweeper/game';
+  } from '#lib/minesweeper/game.js';
   import {
     GAME_STORAGE_KEY,
     type SavedGameState,
     readSavedGameState,
     serializeGameState,
-  } from '$lib/minesweeper/persistence';
-  import { readThemeColors } from '$lib/theme/colors';
-  import { onMount, untrack } from 'svelte';
-  import { on } from 'svelte/events';
-  import { SvelteMap } from 'svelte/reactivity';
+  } from '#lib/minesweeper/persistence.js';
+  import { readThemeColors } from '#lib/theme/colors.js';
 
   const MILLISECONDS_PER_SECOND = 1000;
   const SAVE_INTERVAL_MS = 10_000;
@@ -181,6 +182,8 @@
     lastSavedAt = now;
   };
 
+  const saveBeforeLeaving = () => saveState(currentSavedState(currentElapsedSeconds()));
+
   $effect(() => {
     if (storageReady) {
       saveState(currentSavedState(untrack(currentElapsedSeconds)));
@@ -220,11 +223,6 @@
       void celebrateWin();
     }
 
-    const stopHiddenConfetti = () => {
-      if (document.hidden) {
-        stopConfetti();
-      }
-    };
     const unsubscribeHiddenConfetti = on(document, 'visibilitychange', stopHiddenConfetti);
 
     const motionObserver = new MutationObserver(() => {
@@ -239,7 +237,6 @@
       attributes: true,
     });
 
-    const saveBeforeLeaving = () => saveState(currentSavedState(currentElapsedSeconds()));
     const interval = window.setInterval(() => {
       if (game.phase === 'playing' && startedAt !== null) {
         elapsedSeconds = currentElapsedSeconds();
@@ -267,6 +264,12 @@
     confettiInterval = undefined;
     activeConfetti?.reset();
     activeConfetti = undefined;
+  };
+
+  const stopHiddenConfetti = () => {
+    if (document.hidden) {
+      stopConfetti();
+    }
   };
 
   const celebrateWin = async () => {

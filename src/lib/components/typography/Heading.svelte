@@ -1,9 +1,10 @@
 <script lang="ts">
-  import type { HeadingLevel, TypographyTone } from '$typography/types';
   import type { Snippet } from 'svelte';
   import type { HTMLAttributes } from 'svelte/elements';
 
-  import '$typography/scale.css';
+  import type { HeadingLevel, TypographyTone } from '#typography/types.js';
+
+  import '#typography/scale.css';
 
   type Props = Omit<HTMLAttributes<HTMLHeadingElement>, 'children'> & {
     children: Snippet;

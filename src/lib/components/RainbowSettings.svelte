@@ -1,8 +1,8 @@
 <script lang="ts">
-  import CheckboxInput from '$inputs/CheckboxInput.svelte';
-  import IntegerInput from '$inputs/IntegerInput.svelte';
-  import Details from '$lib/components/Details.svelte';
-  import { maxRainbowIntervalMs } from '$lib/theme/theme';
+  import CheckboxInput from '#inputs/CheckboxInput.svelte';
+  import IntegerInput from '#inputs/IntegerInput.svelte';
+  import Details from '#lib/components/Details.svelte';
+  import { maxRainbowIntervalMs } from '#lib/theme/theme.js';
 
   type Props = {
     channel: 'luminosity' | 'chroma' | 'hue';

@@ -1,7 +1,8 @@
-import { initializeColorScheme } from '$lib/theme/color-scheme.svelte';
-import { initializePreferences } from '$lib/theme/preferences.svelte';
-import { applyTheme, getCurrentTheme } from '$lib/theme/theme';
-import type { ClientInit } from '@sveltejs/kit';
+import type { ClientInit } from '@sveltejs/kit/hooks';
+
+import { initializeColorScheme } from '#lib/theme/color-scheme.svelte.js';
+import { initializePreferences } from '#lib/theme/preferences.svelte.js';
+import { applyTheme, getCurrentTheme } from '#lib/theme/theme.js';
 
 export const init: ClientInit = async () => {
   const theme = getCurrentTheme();

@@ -1,10 +1,10 @@
-import { type Moves, type State, nextMoves } from '$lib/minesweeper/constraint-solving/core';
+import { type Moves, type State, nextMoves } from '#lib/minesweeper/constraint-solving/core.js';
 import {
   DEFAULT_SEARCH_SETTINGS,
   type SearchProgress,
-} from '$lib/minesweeper/constraint-solving/search-settings';
-import type { Cell, GameConfig } from '$lib/minesweeper/game';
-import { neighborsOf } from '$lib/minesweeper/neighbors';
+} from '#lib/minesweeper/constraint-solving/search-settings.js';
+import type { Cell, GameConfig } from '#lib/minesweeper/game.js';
+import { neighborsOf } from '#lib/minesweeper/neighbors.js';
 
 /** Reveal safe cells and expand empty regions, returning false if a mine is encountered. */
 const openSafeCells = (state: State, indices: readonly number[]): boolean => {

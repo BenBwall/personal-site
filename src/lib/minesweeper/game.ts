@@ -1,7 +1,7 @@
-import { placeMines } from '$lib/minesweeper/constraint-solving/find-solvable-games';
-import { searchSettingsSchema } from '$lib/minesweeper/constraint-solving/search-settings';
-import { neighborsOf } from '$lib/minesweeper/neighbors';
-import { z } from '$lib/validation';
+import { placeMines } from '#lib/minesweeper/constraint-solving/find-solvable-games.js';
+import { searchSettingsSchema } from '#lib/minesweeper/constraint-solving/search-settings.js';
+import { neighborsOf } from '#lib/minesweeper/neighbors.js';
+import { z } from '#lib/validation.js';
 
 export const MIN_BOARD_SIZE = 5;
 

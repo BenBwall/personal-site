@@ -1,10 +1,11 @@
-import type { SearchProgress } from '$lib/minesweeper/constraint-solving/search-settings';
+import { on } from 'svelte/events';
+
+import type { SearchProgress } from '#lib/minesweeper/constraint-solving/search-settings.js';
 import type {
   SearchRequest,
   SearchResponse,
-} from '$lib/minesweeper/constraint-solving/solvable-game.worker';
-import { type Game, revealCell } from '$lib/minesweeper/game';
-import { on } from 'svelte/events';
+} from '#lib/minesweeper/constraint-solving/solvable-game.worker.js';
+import { type Game, revealCell } from '#lib/minesweeper/game.js';
 
 /** Keep the page responsive and search until a board is found or the user interrupts. */
 export const startSolvableGameSearch = (

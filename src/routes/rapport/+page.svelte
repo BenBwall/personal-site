@@ -1,9 +1,11 @@
 <script lang="ts">
   import { asset } from '$app/paths';
-  import ArcadaMap from '$lib/components/ArcadaMap.svelte';
-  import Details from '$lib/components/Details.svelte';
-  import { Heading, Text } from '$lib/components/typography';
-  import { thumbnailSizes } from '$lib/layout/image-sizes';
+
+  import ArcadaMap from '#lib/components/ArcadaMap.svelte';
+  import Details from '#lib/components/Details.svelte';
+  import { Heading, Text } from '#lib/components/typography/index.js';
+  import { generatedAssetPath } from '#lib/generated-asset.js';
+  import { thumbnailSizes } from '#lib/layout/image-sizes.js';
 
   const galleryPhotos = [
     { alt: 'Jag i kavaj och slips inför en sitz.', id: 'portrait', label: 'Kavaj och slips' },
@@ -93,7 +95,7 @@
     <div class="diagram-content">
       <img
         class="diagram"
-        src={asset('/images/site-map.svg')}
+        src={asset('images/site-map.svg')}
         alt="Sidkarta med länkar mellan Home, Resume och Projects."
         width="554"
         height="244"
@@ -105,7 +107,7 @@
     <div class="diagram-content">
       <img
         class="diagram"
-        src={asset('/images/layout-diagram.svg')}
+        src={asset('images/layout-diagram.svg')}
         alt="Layoutskiss med en navbar överst, titel och brödtext till vänster, bilder till höger och Minesweeper nedanför."
         width="474"
         height="234"
@@ -182,20 +184,25 @@
       class="gallery-viewer"
       name="en_bildram"
       title="Bildgalleri med bilder från när jag klädde upp mig inför en sitz"
-      src={asset('/images/generated/gallery/portrait.html')}
+      src={asset(generatedAssetPath('images/generated/gallery/portrait.html'))}
       loading="lazy"
     ></iframe>
     <nav aria-label="Välj en bild från sitzen">
       <ul class="gallery-thumbnails">
         {#each galleryPhotos as photo (photo.id)}
           <li>
-            <a href={asset(`/images/generated/gallery/${photo.id}.html`)} target="en_bildram">
+            <a
+              href={asset(generatedAssetPath(`images/generated/gallery/${photo.id}.html`))}
+              target="en_bildram"
+            >
               <img
-                src={asset(`/images/generated/gallery/${photo.id}-thumbnail-80.webp`)}
+                src={asset(
+                  generatedAssetPath(`images/generated/gallery/${photo.id}-thumbnail-80.webp`),
+                )}
                 srcset={[80, 160, 240, 320, 480, 640]
                   .map(
                     (width) =>
-                      `${asset(`/images/generated/gallery/${photo.id}-thumbnail-${width}.webp`)} ${width}w`,
+                      `${asset(generatedAssetPath(`images/generated/gallery/${photo.id}-thumbnail-${width}.webp`))} ${width}w`,
                   )
                   .join(', ')}
                 sizes={thumbnailSizes}
@@ -225,14 +232,14 @@
       controls
       playsinline
       preload="none"
-      poster={asset('/media/report/myvm-demo-poster.webp')}
+      poster={asset('media/report/myvm-demo-poster.webp')}
       width="1920"
       height="1080"
     >
-      <source src={asset('/media/report/myvm-demo.mp4')} type="video/mp4" />
+      <source src={asset('media/report/myvm-demo.mp4')} type="video/mp4" />
       <track
         kind="captions"
-        src={asset('/media/report/myvm-demo.vtt')}
+        src={asset('media/report/myvm-demo.vtt')}
         srclang="sv"
         label="Svenska (automatiska)"
         default
@@ -241,7 +248,7 @@
 
     <Heading level={3} size={4} id="demo-audio">Ljudspår från demon</Heading>
     <audio class="demo-audio" aria-label="Ljudspår från Myvm-demon" controls preload="none">
-      <source src={asset('/media/report/myvm-demo.m4a')} type="audio/mp4" />
+      <source src={asset('media/report/myvm-demo.m4a')} type="audio/mp4" />
     </audio>
     <div class="demo-transcript">
       <Details title="Automatisk transkription">

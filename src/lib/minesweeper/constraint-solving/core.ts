@@ -4,7 +4,7 @@
  * during game playing using constraint programming" (sections 3.3 and 3.5).
  * https://doc.neuro.tu-berlin.de/bachelor/2024-BA-BenediktKunz.pdf
  */
-import type { Cell, GameConfig } from '$lib/minesweeper/game';
+import type { Cell, GameConfig } from '#lib/minesweeper/game.js';
 
 export type Constraint = { cells: number[]; clueIndex: number; mines: number };
 export type Moves = { mines: number[]; safe: number[] };

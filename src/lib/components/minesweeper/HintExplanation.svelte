@@ -1,16 +1,16 @@
 <script lang="ts">
-  import HintCoordinate from '$lib/components/minesweeper/HintCoordinate.svelte';
+  import HintCoordinate from '#lib/components/minesweeper/HintCoordinate.svelte';
   import {
     type HintRole,
     coordinateLabel,
     coordinateList,
     countLabel,
-  } from '$lib/components/minesweeper/presentation';
+  } from '#lib/components/minesweeper/presentation.js';
   import type {
     HintConstraint,
     PlayableHint,
-  } from '$lib/minesweeper/constraint-solving/generate-hints';
-  import type { Game } from '$lib/minesweeper/game';
+  } from '#lib/minesweeper/constraint-solving/generate-hints.js';
+  import type { Game } from '#lib/minesweeper/game.js';
   type Props = { game: Game; hint: PlayableHint };
   let { game, hint }: Props = $props();
 </script>
