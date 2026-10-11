@@ -12,7 +12,7 @@ const themeSchema = z.object({
   rainbowChromaEnabled: z.boolean().default(false),
   rainbowChromaIncrement: z.int().min(1).max(50).default(1),
   rainbowChromaIntervalMs: z.int().min(1).max(maxRainbowIntervalMs).default(100),
-  rainbowEnabled: z.boolean().default(false),
+  rainbowEnabled: z.boolean().default(true),
   rainbowIncrement: z
     .int()
     .min(1)

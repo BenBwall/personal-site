@@ -51,6 +51,9 @@
 <article class="rapport" lang="sv-FI" aria-labelledby="rapport-title">
   <header class="rapport-intro">
     <Heading level={1} id="rapport-title">Rapport</Heading>
+    <Text>
+      <a href="https://github.com/BenBwall/personal-site">Projektets källkod på GitHub</a>
+    </Text>
   </header>
 
   <nav class="contents" aria-label="Rapportens innehåll">
