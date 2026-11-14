@@ -1,13 +1,14 @@
 name: Deploy Whac-A-Mole to Domus
 
-# Builds https://github.com/it-26-sv/whac-a-mole-bergenwb and publishes it to
-# https://people.arcada.fi/~bergenwb/whack-a-mole/. Run it from the Actions tab or with
+# Builds Whac-A-Mole (https://github.com/it-26-sv/whac-a-mole-bergenwb) from its private
+# mirror BenBwall/whac-a-mole-bergenwb and publishes it to
+# https://people.arcada.fi/~bergenwb/whack-a-mole/. See DEPLOYMENT.md. Run it from the Actions tab or with
 # `gh workflow run deploy-whack-a-mole.yml -R BenBwall/personal-site -f ref=main`.
 on:
   workflow_dispatch:
     inputs:
       ref:
-        description: Branch, tag or commit of it-26-sv/whac-a-mole-bergenwb to deploy
+        description: Branch, tag or commit of BenBwall/whac-a-mole-bergenwb to deploy
         required: true
         default: main
 
@@ -28,9 +29,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          repository: it-26-sv/whac-a-mole-bergenwb
+          repository: BenBwall/whac-a-mole-bergenwb
           ref: ${{ inputs.ref }}
-          token: ${{ secrets.WHACK_A_MOLE_TOKEN }}
+          ssh-key: ${{ secrets.WHACK_A_MOLE_DEPLOY_KEY }}
           persist-credentials: false
       - id: revision
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"

@@ -63,15 +63,20 @@ uploads the build (`index.html` last), removes stale files, writes
 URL serves it. The site's own publisher skips `html/whack-a-mole` (`EXTERNAL_SITES`), so
 the two deployments never touch each other's files.
 
-The game repository is private, so the build job needs one more **repository secret**
-(Settings → Secrets and variables → Actions → Repository secrets, not the `domus`
-environment):
+The game's repository belongs to the course organization, which doesn't allow a token
+limited to it, so the workflow builds from a private mirror,
+[BenBwall/whac-a-mole-bergenwb](https://github.com/BenBwall/whac-a-mole-bergenwb). The
+game's local clone has both repositories as push URLs of `origin`, so every `git push`
+updates both; to set that up in another clone:
 
-| Secret               | Value                                                                     |
-| -------------------- | ------------------------------------------------------------------------- |
-| `WHACK_A_MOLE_TOKEN` | Token with read access to the contents of `it-26-sv/whac-a-mole-bergenwb` |
+```sh
+git remote set-url --add --push origin git@github.com:it-26-sv/whac-a-mole-bergenwb.git
+git remote set-url --add --push origin git@github.com:BenBwall/whac-a-mole-bergenwb.git
+```
 
-Prefer a fine-grained personal access token with resource owner `it-26-sv`, access to
-only that repository, and **Contents: Read-only**. The organization may have to approve
-it. A classic token would need the `repo` scope, which reads all of your private
-repositories.
+The build job reads the mirror with a read-only deploy key that only has access to it.
+Its private half is the **repository secret** `WHACK_A_MOLE_DEPLOY_KEY` (not a `domus`
+environment secret); the public half is the mirror's deploy key "personal-site
+deploy-whack-a-mole workflow". To replace it, create a new key pair, add the public key as
+a read-only deploy key of the mirror, store the private key in the secret, and delete the
+old deploy key.
