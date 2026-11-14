@@ -9,6 +9,8 @@ lerna-debug.log*
 
 node_modules
 dist
+# Whac-A-Mole build downloaded by the deploy-whack-a-mole workflow
+/whack-a-mole-site/
 dist-ssr
 .svelte-kit
 .lighthouseci

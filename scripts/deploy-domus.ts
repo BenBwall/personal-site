@@ -1,13 +1,41 @@
-import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
-import { readFile, readdir, stat } from 'node:fs/promises';
+import { randomBytes, randomUUID } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
 import { posix, resolve as resolvePath } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { Client, type FileEntryWithStats, type SFTPWrapper } from 'ssh2';
+import type { Client, SFTPWrapper } from 'ssh2';
+
+import {
+  DOMUS_HOSTS,
+  DOMUS_HTML,
+  DOMUS_PUBLIC_URL,
+  WHACK_A_MOLE_DIRECTORY,
+  connect,
+  errorText,
+  openSftp,
+  readRemote,
+  remotePathIn,
+  removeRemoteFile,
+  sortPaths,
+  verifyPublic,
+  writeRemote,
+} from '#scripts/domus-sftp.ts';
+import {
+  type LocalSite,
+  checkConflicts,
+  makeMissingDirs,
+  printPlan,
+  removeDirs,
+  requireRevision,
+  scanLocalSite,
+  scanRemoteSite,
+  writeReceipt,
+} from '#scripts/domus-sync.ts';
+
+const REMOTE_ROOT = DOMUS_HTML;
+const HOSTS = DOMUS_HOSTS;
 
 const SHARE_TOKEN_BYTES = 32;
-const REMOTE_ROOT = '/home/b/bergenwb/html';
-const HOSTS = ['penti.arcada.fi', 'xena.arcada.fi', 'gabrielle.arcada.fi'] as const;
 const SITE_ROOT = resolvePath(
   process.env.DOMUS_SITE_DIR ?? fileURLToPath(new URL('../site/', import.meta.url)),
 );
@@ -16,185 +44,22 @@ const PROTECTED_PATHS = new Set([
   '.personal-site-deploy-target',
   'deployment.json',
 ] as const);
+// Top-level directories of `html` that other repositories publish. This publisher never
+// lists, changes or removes anything inside them, and the build may not contain them.
+const EXTERNAL_SITES: ReadonlySet<string> = new Set([WHACK_A_MOLE_DIRECTORY]);
 
 type ProtectedPath = typeof PROTECTED_PATHS extends ReadonlySet<infer T> ? T : never;
-const USERNAME = process.env.ARCADA_USERNAME;
-const PASSWORD = process.env.ARCADA_PASSWORD;
 
 type Session = Readonly<{ host: string; client: Client; sftp: SFTPWrapper; revision: string }>;
-type LocalSite = Readonly<{
-  files: ReadonlyMap<string, Readonly<{ absolute: string; size: number }>>;
-  dirs: ReadonlySet<string>;
-}>;
-type RemoteSite = Readonly<{ files: ReadonlySet<string>; dirs: ReadonlySet<string> }>;
 
-if (!/^[a-zA-Z0-9._-]+$/.test(USERNAME ?? '')) {
-  throw new Error('ARCADA_USERNAME must be a bare account name.');
-}
-if (!PASSWORD) {
-  throw new Error('Set ARCADA_PASSWORD in the domus environment.');
-}
-
-const knownHosts = await readFile(
-  fileURLToPath(new URL('../.github/domus_known_hosts', import.meta.url)),
-  'utf8',
-);
 const expectedMarker = await readFile(
   fileURLToPath(new URL('../.github/domus-deploy-target', import.meta.url)),
 );
-const pinnedKeys = new Map<string, Buffer>(
-  knownHosts
-    .split(/\r?\n/)
-    .filter(Boolean)
-    .map((line) => {
-      const [host, , base64] = line.split(/\s+/);
-      return [host, Buffer.from(base64, 'base64')];
-    }),
-);
-
-const connect = (host: string): Promise<Client> =>
-  new Promise<Client>((resolve, reject) => {
-    const pinned = pinnedKeys.get(host);
-    if (!pinned) {
-      reject(new Error(`No pinned host key for ${host}`));
-      return;
-    }
-    const client = new Client();
-    let ready = false;
-    client.on('ready', () => {
-      ready = true;
-      resolve(client);
-    });
-    client.on('error', (error) => {
-      if (!ready) {
-        reject(error);
-      }
-    });
-    client.on('keyboard-interactive', (_name, _instructions, _language, prompts, finish) => {
-      finish(prompts.map(() => PASSWORD));
-    });
-    const verifyHostKey = (key: Buffer) =>
-      key.length === pinned.length && timingSafeEqual(key, pinned);
-    client.connect({
-      host,
-      hostVerifier: verifyHostKey,
-      password: PASSWORD,
-      port: 22,
-      readyTimeout: 10_000,
-      tryKeyboard: true,
-      username: USERNAME,
-    });
-  });
-
-const openSftp = (client: Client): Promise<SFTPWrapper> =>
-  new Promise<SFTPWrapper>((resolve, reject) => {
-    client.sftp((error, sftp) => {
-      if (error) {
-        reject(error);
-      } else {
-        sftp.on('error', (channelError: unknown) => {
-          process.stderr.write(
-            `SFTP channel error: ${channelError instanceof Error ? channelError.message : String(channelError)}\n`,
-          );
-        });
-        resolve(sftp);
-      }
-    });
-  });
-
-const readRemote = (sftp: SFTPWrapper, path: string): Promise<Buffer> =>
-  new Promise<Buffer>((resolve, reject) => {
-    sftp.readFile(path, (error, data) => {
-      if (error) {
-        reject(error);
-      } else {
-        resolve(data);
-      }
-    });
-  });
-
-const writeRemote = (sftp: SFTPWrapper, path: string, content: Buffer): Promise<void> =>
-  new Promise<void>((resolve, reject) => {
-    sftp.writeFile(path, content, (error) => {
-      if (error) {
-        reject(error);
-      } else {
-        resolve();
-      }
-    });
-  });
-
-const listRemote = (sftp: SFTPWrapper, path: string): Promise<FileEntryWithStats[]> =>
-  new Promise<FileEntryWithStats[]>((resolve, reject) => {
-    sftp.readdir(path, (error, entries) => {
-      if (error) {
-        reject(error);
-      } else {
-        resolve(entries);
-      }
-    });
-  });
-
-const makeRemoteDir = (sftp: SFTPWrapper, path: string): Promise<void> =>
-  new Promise<void>((resolve, reject) => {
-    sftp.mkdir(path, (error) => {
-      if (error) {
-        reject(error);
-      } else {
-        resolve();
-      }
-    });
-  });
-
-const removeRemoteFile = (sftp: SFTPWrapper, path: string): Promise<void> =>
-  new Promise<void>((resolve, reject) => {
-    sftp.unlink(path, (error) => {
-      if (error) {
-        reject(error);
-      } else {
-        resolve();
-      }
-    });
-  });
-
-const removeRemoteDir = (sftp: SFTPWrapper, path: string): Promise<void> =>
-  new Promise<void>((resolve, reject) => {
-    sftp.rmdir(path, (error) => {
-      if (error) {
-        reject(error);
-      } else {
-        resolve();
-      }
-    });
-  });
-
-const remotePath = (relative: string): string => {
-  if (
-    !relative ||
-    relative.startsWith('/') ||
-    relative.split('/').some((part) => !part || part === '.' || part === '..')
-  ) {
-    throw new Error(`Unsafe remote path: ${relative}`);
-  }
-  return posix.join(REMOTE_ROOT, relative);
-};
+const remotePath = (relative: string): string => remotePathIn(REMOTE_ROOT, relative);
 
 const isProtectedPath = (relative: string): boolean =>
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion
   PROTECTED_PATHS.has(posix.basename(relative) as ProtectedPath);
-
-const sortPaths = (
-  values: Iterable<string>,
-  compare = (left: string, right: string) => left.localeCompare(right),
-): string[] => {
-  const copy = [...values];
-  // The configured TypeScript lib omits toSorted; the copied array is safe to mutate.
-  // oxlint-disable-next-line unicorn/no-array-sort
-  return copy.sort(compare);
-};
-
-const errorText = (error: unknown): string =>
-  error instanceof Error ? error.message : String(error);
 
 const openSession = async (host: string): Promise<Session> => {
   let client: Client | undefined;
@@ -277,76 +142,16 @@ const verifySharedStorage = async (sessions: Session[]): Promise<Session[]> => {
   }
 };
 
-const scanLocal = async (): Promise<LocalSite> => {
-  const files = new Map<string, { absolute: string; size: number }>();
-  const dirs = new Set<string>();
-  const visit = async (directory: string, relative: string): Promise<void> => {
-    const entries = await readdir(directory, { withFileTypes: true });
-    await Promise.all(
-      entries.map(async (entry) => {
-        const nextRelative = posix.join(relative, entry.name);
-        const absolute = resolvePath(directory, entry.name);
-        remotePath(nextRelative);
-        if (entry.isSymbolicLink()) {
-          throw new Error(`The build contains a symbolic link: ${nextRelative}`);
-        }
-        if (entry.isDirectory()) {
-          dirs.add(nextRelative);
-          await visit(absolute, nextRelative);
-        } else if (entry.isFile()) {
-          if (isProtectedPath(nextRelative)) {
-            throw new Error(`The build contains a reserved deployment file: ${nextRelative}`);
-          }
-          files.set(nextRelative, { absolute, size: (await stat(absolute)).size });
-        } else {
-          throw new Error(`The build contains an unsupported entry: ${nextRelative}`);
-        }
-      }),
-    );
-  };
-  await visit(SITE_ROOT, '');
-  if (!files.has('index.html')) {
-    throw new Error('The build is missing index.html.');
-  }
-  return { dirs, files };
-};
-
-const scanRemote = async (sftp: SFTPWrapper): Promise<RemoteSite> => {
-  const files = new Set<string>();
-  const dirs = new Set<string>();
-  const visit = async (relative: string): Promise<void> => {
-    const entries = await listRemote(sftp, relative ? remotePath(relative) : REMOTE_ROOT);
-    await Promise.all(
-      entries.map(async (entry) => {
-        const name = entry.filename;
-        if (name === '.' || name === '..') {
-          return;
-        }
-        if (!name || name.includes('/') || name.includes('\\')) {
-          throw new Error(`Unsafe name in remote listing: ${name}`);
-        }
-        const nextRelative = posix.join(relative, name);
-        remotePath(nextRelative);
-        if (entry.attrs.isSymbolicLink()) {
-          throw new Error(`Remote site contains a symbolic link: ${nextRelative}`);
-        }
-        if (entry.attrs.isDirectory()) {
-          dirs.add(nextRelative);
-          await visit(nextRelative);
-        } else if (entry.attrs.isFile()) {
-          files.add(nextRelative);
-        } else {
-          throw new Error(`Remote site contains an unsupported entry: ${nextRelative}`);
-        }
-      }),
-    );
-  };
-  await visit('');
-  if (!files.has('.htaccess') || !files.has('.personal-site-deploy-target')) {
-    throw new Error('The remote site is missing a protected target file.');
-  }
-  return { dirs, files };
-};
+const scanLocal = (): Promise<LocalSite> =>
+  scanLocalSite(SITE_ROOT, (relative, isFile) => {
+    if (EXTERNAL_SITES.has(relative)) {
+      return "The build contains another site's directory";
+    }
+    if (isFile && isProtectedPath(relative)) {
+      return 'The build contains a reserved deployment file';
+    }
+    return null;
+  });
 
 const settleAll = async (tasks: Promise<void>[]): Promise<void> => {
   const results = await Promise.allSettled(tasks);
@@ -389,25 +194,12 @@ const syncSite = async (sessions: Session[], local: LocalSite): Promise<string> 
     throw new Error('No SFTP host shares the marked target directory.');
   }
   const primary = sessions[0];
-  const remote = await scanRemote(primary.sftp);
-  for (const relative of local.dirs) {
-    if (remote.files.has(relative)) {
-      throw new Error(`A remote file blocks a build directory: ${relative}`);
-    }
+  const remote = await scanRemoteSite(primary.sftp, REMOTE_ROOT, EXTERNAL_SITES);
+  if (!remote.files.has('.htaccess') || !remote.files.has('.personal-site-deploy-target')) {
+    throw new Error('The remote site is missing a protected target file.');
   }
-  for (const relative of local.files.keys()) {
-    if (remote.dirs.has(relative)) {
-      throw new Error(`A remote directory blocks a build file: ${relative}`);
-    }
-  }
-  const newDirs = sortPaths(
-    [...local.dirs].filter((relative) => !remote.dirs.has(relative)),
-    (left, right) => left.split('/').length - right.split('/').length || left.localeCompare(right),
-  );
-  await newDirs.reduce(
-    (previous, relative) => previous.then(() => makeRemoteDir(primary.sftp, remotePath(relative))),
-    Promise.resolve(),
-  );
+  checkConflicts(local, remote);
+  await makeMissingDirs(primary.sftp, REMOTE_ROOT, local, remote);
 
   const contentFiles = sortPaths(
     [...local.files.keys()].filter((relative) => relative !== 'index.html'),
@@ -439,64 +231,27 @@ const syncSite = async (sessions: Session[], local: LocalSite): Promise<string> 
   await runDistributed(sessions, staleFiles, (session, relative) =>
     removeRemoteFile(session.sftp, remotePath(relative)),
   );
-  const staleDirs = sortPaths(
-    [...remote.dirs].filter(
-      (relative) =>
-        !local.dirs.has(relative) &&
-        ![...remote.files].some((file) => isProtectedPath(file) && file.startsWith(`${relative}/`)),
-    ),
-    (left, right) => right.split('/').length - left.split('/').length || right.localeCompare(left),
+  const staleDirs = [...remote.dirs].filter(
+    (relative) =>
+      !local.dirs.has(relative) &&
+      ![...remote.files].some((file) => isProtectedPath(file) && file.startsWith(`${relative}/`)),
   );
-  await staleDirs.reduce(
-    (previous, relative) =>
-      previous.then(() => removeRemoteDir(primary.sftp, remotePath(relative))),
-    Promise.resolve(),
-  );
+  await removeDirs(primary.sftp, REMOTE_ROOT, staleDirs);
 
   const actualIndex = await readRemote(primary.sftp, remotePath('index.html'));
   if (!actualIndex.equals(indexContent)) {
     throw new Error('The remote homepage differs from the build.');
   }
-  const revision = process.env.GITHUB_SHA;
-  if (!/^[a-f0-9]{40}$/.test(revision ?? '')) {
-    throw new Error('GITHUB_SHA must be a full commit SHA.');
-  }
-  const receipt = Buffer.from(`${JSON.stringify({ revision })}\n`);
-  await writeRemote(primary.sftp, remotePath('deployment.json'), receipt);
+  const revision = requireRevision('GITHUB_SHA');
+  const receipt = await writeReceipt(primary.sftp, remotePath('deployment.json'), revision);
   process.stdout.write(
     `Published ${revision} through ${sessions.map((session) => session.host).join(', ')}.\n`,
   );
-  return receipt.toString('utf8').trim();
-};
-
-const verifyPublic = async (expected: string, remaining: number): Promise<void> => {
-  const revision = process.env.GITHUB_SHA;
-  const url = `https://people.arcada.fi/~bergenwb/deployment.json?rev=${revision}`;
-  const actual = await fetch(url, {
-    headers: { 'Cache-Control': 'no-cache' },
-    signal: AbortSignal.timeout(15_000),
-  })
-    .then((response) => (response.ok ? response.text() : ''))
-    .catch(() => '');
-  if (actual.trim() === expected) {
-    process.stdout.write(`The public site serves ${revision}.\n`);
-    return;
-  }
-  if (remaining <= 1) {
-    throw new Error('The public site did not serve the deployed revision.');
-  }
-  await new Promise((resolve) => {
-    setTimeout(resolve, 3_000);
-  });
-  await verifyPublic(expected, remaining - 1);
+  return receipt;
 };
 
 if (process.argv.includes('--plan')) {
-  const local = await scanLocal();
-  const bytes = [...local.files.values()].reduce((total, file) => total + file.size, 0);
-  process.stdout.write(
-    `Build: ${local.files.size} files, ${local.dirs.size} directories, ${bytes} bytes.\n`,
-  );
+  printPlan(await scanLocal());
 } else {
   let sessions: Session[] = [];
   let receipt: string | undefined;
@@ -516,6 +271,8 @@ if (process.argv.includes('--plan')) {
     }
   }
   if (receipt) {
-    await verifyPublic(receipt, 10);
+    const revision = process.env.GITHUB_SHA;
+    await verifyPublic(`${DOMUS_PUBLIC_URL}deployment.json?rev=${revision}`, receipt);
+    process.stdout.write(`The public site serves ${revision}.\n`);
   }
 }

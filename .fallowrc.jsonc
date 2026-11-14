@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/fallow/schema.json",
   "minimumVersion": "3.28.0",
-  "entry": ["scripts/deploy-domus.ts"],
+  "entry": ["scripts/deploy-domus.ts", "scripts/deploy-whack-a-mole.ts"],
   "ignorePatterns": ["static/theme-init.js", "static/images/generated/**"],
   "duplicates": {
     "enabled": true,
