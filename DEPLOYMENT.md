@@ -35,7 +35,7 @@ changes or removes the top-level directories in `EXTERNAL_SITES`, which other
 repositories publish, and refuses a build that contains one. Currently that's
 `html/whack-a-mole`, which the private mirror
 [BenBwall/whac-a-mole-bergenwb](https://github.com/BenBwall/whac-a-mole-bergenwb) of the
-Whac-A-Mole course project publishes; see its `DEPLOYMENT.md`. It checks that
+Whac-A-Mole course project publishes; see its `README.md`. It checks that
 the public URL serves that SHA. A successful GitHub push alone does not confirm
 deployment; check the Actions run and the public site. To retry without a new
 commit, use the workflow's **Run workflow** button on `main`.

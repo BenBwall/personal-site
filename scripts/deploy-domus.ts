@@ -20,7 +20,7 @@ const PROTECTED_PATHS = new Set([
 // lists, changes or removes anything inside them, and the build may not contain them.
 const EXTERNAL_SITES: ReadonlySet<string> = new Set([
   // Whac-A-Mole, published by the private mirror BenBwall/whac-a-mole-bergenwb
-  // (its DEPLOYMENT.md), served at /~bergenwb/whack-a-mole/.
+  // (see its README.md), served at /~bergenwb/whack-a-mole/.
   'whack-a-mole',
 ]);
 
